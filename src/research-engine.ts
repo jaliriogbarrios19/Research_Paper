@@ -379,13 +379,13 @@ export async function verifyDOIs(
 
 export function formatPaper(text: string, mode: "quick" | "full"): string {
   const cleaned = text
-    .replace(/^% .*\n?/gm, "")    // strip LaTeX % comment lines
-    .replace(/^```\w*\n?/gm, "")  // strip code fences
+    .replace(/^% .*\n?/gm, "")
+    .replace(/^```\w*\n?/gm, "")
     .trim();
 
   if (mode === "quick") {
     return `> [!info]+ Research Answer\n> ${cleaned.replace(/\n/g, "\n> ")}\n\n`;
   }
 
-  return `> [!abstract]+ Research Paper (APA 7)\n> ${cleaned.replace(/\n/g, "\n> ")}\n\n`;
+  return `---\n\n${cleaned}\n\n---\n`;
 }
