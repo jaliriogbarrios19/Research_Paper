@@ -3,7 +3,7 @@
   "name": "Research and Paper",
   "version": "0.1.0",
   "minAppVersion": "1.5.0",
-  "description": "Search academic databases and generate APA 7 papers with AI — right inside Obsidian. Supports 7 LLM providers and 10 research domains.",
+  "description": "Search academic databases and generate APA 7 papers with AI. Supports 7 LLM providers and 10 research domains.",
   "author": "Jesús García y DeepSeek V4-Pro (with Opencode and Gentle AI)",
   "authorUrl": "https://github.com/jaliriogbarrios19",
   "isDesktopOnly": false
