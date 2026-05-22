@@ -1,7 +1,7 @@
 {
   "id": "research-paper",
-  "name": "Research and Paper",
-  "version": "0.1.2",
+  "name": "Research Paper",
+  "version": "0.1.3",
   "minAppVersion": "1.5.0",
   "description": "Search academic databases and generate APA 7 papers with AI. Supports 7 LLM providers and 10 research domains.",
   "author": "Jesús García y DeepSeek V4-Pro (with Opencode and Gentle AI)",
