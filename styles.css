@@ -1,0 +1,13 @@
+.research-paper-modal {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.research-paper-modal .setting-item {
+  border: none;
+  padding: 4px 0;
+}
+
+.research-paper-modal input[type="text"] {
+  width: 100%;
+}

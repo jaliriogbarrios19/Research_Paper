@@ -1,0 +1,361 @@
+import { AcademicWork, LLMProvider } from "./types";
+
+const PUBMED_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils";
+const OPENALEX_BASE = "https://api.openalex.org/works";
+
+const DEFAULT_MODELS: Record<LLMProvider, string> = {
+  openai: "gpt-5.5",
+  anthropic: "claude-opus-4-7",
+  deepseek: "deepseek-v4-pro",
+  gemini: "gemini-2.5-pro",
+  openrouter: "openai/gpt-5.5",
+  grok: "grok-4.3",
+  glm: "glm-4-plus",
+};
+
+export async function searchAcademic(
+  query: string,
+  highPrecision: boolean,
+  pubmedApiKey: string,
+  crossrefEmail: string
+): Promise<AcademicWork[]> {
+  const email = crossrefEmail || "hola@neuroscribe.app";
+  const meshQuery = highPrecision ? `${query}[MeSH Terms]` : query;
+
+  const [pubmed, openalex] = await Promise.allSettled([
+    fetchPubMed(meshQuery, pubmedApiKey),
+    fetchOpenAlex(query, email),
+  ]);
+
+  const combined: AcademicWork[] = [];
+  if (pubmed.status === "fulfilled") combined.push(...pubmed.value);
+  if (openalex.status === "fulfilled") combined.push(...openalex.value);
+
+  const seen = new Map<string, AcademicWork>();
+  for (const work of combined) {
+    const key = work.doi
+      ? work.doi.replace("https://doi.org/", "").toLowerCase()
+      : work.title.toLowerCase();
+    if (!seen.has(key)) seen.set(key, work);
+  }
+
+  const result = Array.from(seen.values());
+  result.sort((a, b) => b.relevance_score - a.relevance_score);
+  return result.slice(0, 15);
+}
+
+async function fetchPubMed(
+  query: string,
+  apiKey: string
+): Promise<AcademicWork[]> {
+  const params = new URLSearchParams({
+    db: "pubmed",
+    term: query,
+    retmode: "json",
+    retmax: "10",
+  });
+  if (apiKey) params.set("api_key", apiKey);
+
+  const searchRes = await fetch(
+    `${PUBMED_BASE}/esearch.fcgi?${params.toString()}`
+  );
+  if (!searchRes.ok) throw new Error(`PubMed HTTP ${searchRes.status}`);
+  const searchData = await searchRes.json();
+  const ids: string[] = searchData.esearchresult?.idlist ?? [];
+  if (ids.length === 0) return [];
+
+  const summaryParams = new URLSearchParams({
+    db: "pubmed",
+    id: ids.join(","),
+    retmode: "json",
+  });
+  if (apiKey) summaryParams.set("api_key", apiKey);
+
+  const sumRes = await fetch(
+    `${PUBMED_BASE}/esummary.fcgi?${summaryParams.toString()}`
+  );
+  if (!sumRes.ok) throw new Error(`PubMed summary HTTP ${sumRes.status}`);
+  const sumData = await sumRes.json();
+
+  const abstracts = await fetchAbstracts(ids, apiKey);
+
+  const works: AcademicWork[] = [];
+  for (const id of ids) {
+    const article = sumData.result?.[id];
+    if (!article) continue;
+    const doi =
+      article.articleids?.find((a: { idtype: string }) => a.idtype === "doi")
+        ?.value ?? "";
+    works.push({
+      doi: doi ? `https://doi.org/${doi}` : "",
+      title: article.title ?? "",
+      authors:
+        article.authors?.map((a: { name: string }) => ({ name: a.name })) ??
+        [],
+      year: parseInt(article.pubdate?.split(" ")[0] ?? "0") || 0,
+      journal: article.fulljournalname ?? "",
+      abstract_text: abstracts.get(id) ?? "",
+      relevance_score: 0.9,
+      url: doi
+        ? `https://doi.org/${doi}`
+        : `https://pubmed.ncbi.nlm.nih.gov/${id}/`,
+      mesh_terms: [],
+    });
+  }
+  return works;
+}
+
+async function fetchAbstracts(
+  ids: string[],
+  apiKey: string
+): Promise<Map<string, string>> {
+  const result = new Map<string, string>();
+  try {
+    const params = new URLSearchParams({
+      db: "pubmed",
+      id: ids.join(","),
+      retmode: "xml",
+      rettype: "abstract",
+    });
+    if (apiKey) params.set("api_key", apiKey);
+
+    const res = await fetch(
+      `${PUBMED_BASE}/efetch.fcgi?${params.toString()}`
+    );
+    if (!res.ok) return result;
+
+    const xml = await res.text();
+    const abstractRegex =
+      /<PubmedArticle>[\s\S]*?<PMID[^>]*>(\d+)<\/PMID>[\s\S]*?<AbstractText[^>]*>([\s\S]*?)<\/AbstractText>/gi;
+
+    let match;
+    while ((match = abstractRegex.exec(xml)) !== null) {
+      const pmid = match[1];
+      const abstract = match[2]
+        .replace(/<[^>]+>/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (abstract) result.set(pmid, abstract);
+    }
+  } catch {
+    // EFetch failure is non-fatal — return empty abstracts
+  }
+  return result;
+}
+
+async function fetchOpenAlex(
+  query: string,
+  email: string
+): Promise<AcademicWork[]> {
+  const params = new URLSearchParams({ search: query, mailto: email });
+  const res = await fetch(`${OPENALEX_BASE}?${params.toString()}`);
+  if (!res.ok) throw new Error(`OpenAlex HTTP ${res.status}`);
+  const data = await res.json();
+
+  return (data.results ?? []).map((w: any) => ({
+    doi: w.doi ?? "",
+    title: w.title ?? w.display_name ?? "",
+    authors:
+      w.authorships?.map((a: any) => ({
+        name: a.author?.display_name ?? "",
+      })) ?? [],
+    year: w.publication_year ?? 0,
+    journal: w.host_venue?.display_name ?? "",
+    abstract_text: "",
+    relevance_score: w.relevance_score ?? 0.5,
+    url: w.doi ?? "",
+    mesh_terms: [],
+  }));
+}
+
+export async function generatePaper(
+  provider: LLMProvider,
+  apiKey: string,
+  model: string | undefined,
+  query: string,
+  works: AcademicWork[],
+  domain: string,
+  mode: "quick" | "full",
+  paperLanguage: string,
+  instructions?: string
+): Promise<string> {
+  const effectiveModel = model || DEFAULT_MODELS[provider];
+
+  const context = works
+    .map(
+      (w, i) =>
+        `Source ${i + 1}: ${w.title} (${w.year})\n${w.abstract_text || w.journal}`
+    )
+    .join("\n\n");
+
+  const extra = instructions?.trim()
+    ? `\nAdditional instructions from user: ${instructions.trim()}`
+    : "";
+
+  const languageNames: Record<string, string> = {
+    es: "Español", en: "English", pt: "Português", fr: "Français", de: "Deutsch", it: "Italiano"
+  };
+  const abstractTerms: Record<string, string> = {
+    es: "Resumen", en: "Abstract", pt: "Resumo", fr: "Résumé", de: "Zusammenfassung", it: "Abstract"
+  };
+  const langName = languageNames[paperLanguage] || paperLanguage;
+  const abstractTerm = abstractTerms[paperLanguage] || "Abstract";
+
+  const prompt =
+    mode === "quick"
+      ? `Answer this question using the provided evidence. Be concise and cite sources.\nLanguage: write the answer in ${paperLanguage}.${extra}\n\nQuestion: ${query}\nDomain: ${domain}\n\nEvidence:\n${context}`
+      : `Generate an academic paper in clean markdown format (no LaTeX, no code fences, no % comments). Use APA 7th edition style with this structure:
+
+## {Bilingual title in English / ${langName}}
+
+### Abstract (English)
+{Write the abstract in English — this is mandatory}
+
+### ${abstractTerm} (${langName})
+{Same abstract translated to ${langName}}
+
+### Keywords / ${langName === "es" ? "Palabras clave" : langName === "pt" ? "Palavras-chave" : langName === "fr" ? "Mots-clés" : langName === "de" ? "Schlüsselwörter" : langName === "it" ? "Parole chiave" : "Keywords"}
+{5-7 keywords in English and ${langName}}
+
+### Introduction
+{Paper body in ${langName} with in-text APA citations}
+
+### References
+{APA 7 formatted references, hanging indent}
+
+Write the paper body in ${langName}.${extra}
+
+Topic: ${query}\nDomain: ${domain}\n\nEvidence:\n${context}`;
+
+  return callLLM(provider, apiKey, effectiveModel, prompt);
+}
+
+async function callLLM(
+  provider: LLMProvider,
+  apiKey: string,
+  model: string,
+  prompt: string
+): Promise<string> {
+  switch (provider) {
+    case "anthropic":
+      return callAnthropic(apiKey, model, prompt);
+    case "gemini":
+      return callGemini(apiKey, model, prompt);
+    default:
+      return callOpenAICompat(provider, apiKey, model, prompt);
+  }
+}
+
+async function callOpenAICompat(
+  provider: LLMProvider,
+  apiKey: string,
+  model: string,
+  prompt: string
+): Promise<string> {
+  const baseUrls: Record<string, string> = {
+    openai: "https://api.openai.com",
+    deepseek: "https://api.deepseek.com",
+    openrouter: "https://openrouter.ai/api",
+    grok: "https://api.x.ai",
+    glm: "https://api.z.ai",
+  };
+
+  const baseUrl = baseUrls[provider];
+
+  const res = await fetch(`${baseUrl}/v1/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text().catch(() => "");
+    throw new Error(`${provider} HTTP ${res.status}: ${err.slice(0, 200)}`);
+  }
+
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content ?? "";
+}
+
+async function callAnthropic(
+  apiKey: string,
+  model: string,
+  prompt: string
+): Promise<string> {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 4096,
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text().catch(() => "");
+    throw new Error(`Anthropic HTTP ${res.status}: ${err.slice(0, 200)}`);
+  }
+
+  const data = await res.json();
+  return data.content?.[0]?.text ?? "";
+}
+
+async function callGemini(
+  apiKey: string,
+  model: string,
+  prompt: string
+): Promise<string> {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.text().catch(() => "");
+    throw new Error(`Gemini HTTP ${res.status}: ${err.slice(0, 200)}`);
+  }
+
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+}
+
+export async function verifyDOIs(
+  text: string,
+  crossrefEmail: string
+): Promise<string> {
+  const doiRegex = /(?:doi:?\s*|https?:\/\/doi\.org\/)(10\.\d{4,}\/[^\s\]\)]+)/gi;
+
+  return text.replace(doiRegex, (match, doi) => {
+    return `[DOI: ${doi}]`;
+  });
+}
+
+export function formatPaper(text: string, mode: "quick" | "full"): string {
+  const cleaned = text
+    .replace(/^% .*\n?/gm, "")    // strip LaTeX % comment lines
+    .replace(/^```\w*\n?/gm, "")  // strip code fences
+    .trim();
+
+  if (mode === "quick") {
+    return `> [!info]+ Research Answer\n> ${cleaned.replace(/\n/g, "\n> ")}\n\n`;
+  }
+
+  return `> [!abstract]+ Research Paper (APA 7)\n> ${cleaned.replace(/\n/g, "\n> ")}\n\n`;
+}
