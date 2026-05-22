@@ -438,5 +438,5 @@ export function formatPaper(text: string, mode: "quick" | "full"): string {
     return `> [!info]+ Research Answer\n> ${cleaned.replace(/\n/g, "\n> ")}\n\n`;
   }
 
-  return `---\n\n${cleaned}\n\n---\n`;
+  return `\n${cleaned}\n`;
 }
