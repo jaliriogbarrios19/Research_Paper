@@ -184,9 +184,18 @@ export async function generatePaper(
   const context = works
     .map(
       (w, i) =>
-        `Source ${i + 1}: ${w.title} (${w.year})\n${w.abstract_text || w.journal}`
+        `Source ${i + 1}: ${w.title} (${w.year})\nAuthors: ${w.authors.map((a) => a.name).join(", ")}\nJournal: ${w.journal}\nDOI: ${w.doi}\nAbstract: ${w.abstract_text || "Not available"}`
     )
     .join("\n\n");
+
+  const sourceDOIs = works
+    .filter((w) => w.doi)
+    .map((w) => w.doi.replace("https://doi.org/", ""))
+    .join(", ");
+
+  const citationRule = sourceDOIs
+    ? `\nCRITICAL: Only cite the provided sources above. Use their EXACT DOIs in references (${sourceDOIs}). Do NOT invent new sources or fabricate DOIs. If a source has no DOI, cite it without one.`
+    : "";
 
   const extra = instructions?.trim()
     ? `\nAdditional instructions from user: ${instructions.trim()}`
@@ -203,8 +212,8 @@ export async function generatePaper(
 
   const prompt =
     mode === "quick"
-      ? `Answer this question using the provided evidence. Be concise and cite sources.\nLanguage: write the answer in ${paperLanguage}.${extra}\n\nQuestion: ${query}\nDomain: ${domain}\n\nEvidence:\n${context}`
-      : `Generate an academic paper in clean markdown format (no LaTeX, no code fences, no % comments). Use APA 7th edition style with this structure:
+      ? `Answer this question using the provided evidence. Be concise and cite sources.${citationRule}\nLanguage: write the answer in ${paperLanguage}.${extra}\n\nQuestion: ${query}\nDomain: ${domain}\n\nEvidence:\n${context}`
+      : `Generate an academic paper in clean markdown format (no LaTeX, no code fences, no % comments). Use APA 7th edition style with this structure:${citationRule}
 
 ## {Bilingual title in English / ${langName}}
 
@@ -370,11 +379,53 @@ export async function verifyDOIs(
   text: string,
   crossrefEmail: string
 ): Promise<string> {
-  const doiRegex = /(?:doi:?\s*|https?:\/\/doi\.org\/)(10\.\d{4,}\/[^\s\]\)]+)/gi;
+  const doiRegex = /(?:\[DOI:\s*|https?:\/\/doi\.org\/)(10\.\d{4,}\/[^\s\]\)\]]+)/gi;
+  const email = crossrefEmail || "hola@neuroscribe.app";
+  const dois = new Map<string, string>();
 
-  return text.replace(doiRegex, (match, doi) => {
-    return `[DOI: ${doi}]`;
-  });
+  let match;
+  while ((match = doiRegex.exec(text)) !== null) {
+    const raw = match[1].replace(/[.,;:)\]]+$/, "");
+    if (!dois.has(raw)) dois.set(raw, raw);
+  }
+
+  if (dois.size === 0) return text;
+
+  const validDois = new Set<string>();
+  const invalidDois = new Set<string>();
+
+  for (const doi of dois.values()) {
+    try {
+      const res = await fetch(
+        `https://api.crossref.org/works/${encodeURIComponent(doi)}?mailto=${encodeURIComponent(email)}`,
+        { signal: AbortSignal.timeout(5000) }
+      );
+      if (res.ok) {
+        validDois.add(doi);
+      } else if (res.status === 404) {
+        invalidDois.add(doi);
+      } else {
+        validDois.add(doi);
+      }
+    } catch {
+      validDois.add(doi);
+    }
+  }
+
+  let result = text;
+  for (const doi of invalidDois) {
+    const escaped = doi.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    result = result.replace(
+      new RegExp(`\\[DOI:\\s*${escaped}\\]`, "gi"),
+      `*(Cita no verificada)*`
+    );
+    result = result.replace(
+      new RegExp(`https?://doi\\.org/${escaped}`, "gi"),
+      `[DOI invalidado: ${doi}]`
+    );
+  }
+
+  return result;
 }
 
 export function formatPaper(text: string, mode: "quick" | "full"): string {
