@@ -41,7 +41,9 @@ export async function searchAcademic(
 
   const result = Array.from(seen.values());
   result.sort((a, b) => b.relevance_score - a.relevance_score);
-  return result.slice(0, 15);
+
+  const relevant = result.filter((w) => w.relevance_score >= 0.5);
+  return relevant.slice(0, 10);
 }
 
 async function fetchPubMed(

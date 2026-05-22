@@ -197,9 +197,20 @@ export class ResearchModal extends Modal {
           text: work.title,
           attr: { style: "font-weight: 600; margin-bottom: 2px;" },
         });
-        info.createEl("div", {
-          text: `${work.year} · ${work.journal}`,
-          attr: { style: "font-size: 0.85em; color: var(--text-muted);" },
+        const meta = info.createDiv({
+          attr: {
+            style: "display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: var(--text-muted);",
+          },
+        });
+        meta.createEl("span", { text: `${work.year} · ${work.journal}` });
+        const score = Math.round(work.relevance_score * 100);
+        const scoreColor =
+          score >= 80 ? "var(--color-green)" : score >= 60 ? "var(--color-orange)" : "var(--text-faint)";
+        meta.createEl("span", {
+          text: `${score}%`,
+          attr: {
+            style: `font-size: 0.75em; background: var(--background-modifier-border); padding: 1px 4px; border-radius: 3px; color: ${scoreColor};`,
+          },
         });
         if (work.url) {
           info.createEl("a", {
