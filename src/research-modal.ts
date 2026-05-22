@@ -24,7 +24,7 @@ export class ResearchModal extends Modal {
   private optimizing = false;
   private optimizedQuery = "";
   private results: AcademicWork[] = [];
-  private selectedCheckboxes: HTMLInputElement[] = [];
+  private selectedIndices: Set<number> = new Set();
   private instructions = "";
   private error: string | null = null;
 
@@ -175,9 +175,7 @@ export class ResearchModal extends Modal {
         },
       });
 
-      this.selectedCheckboxes = [];
-
-      for (const work of this.results.slice(0, 10)) {
+      for (const [idx, work] of this.results.slice(0, 10).entries()) {
         const row = contentEl.createDiv({
           attr: {
             style:
@@ -189,8 +187,14 @@ export class ResearchModal extends Modal {
           type: "checkbox",
           attr: { style: "margin-top: 3px; flex-shrink: 0;" },
         });
-        cb.checked = true;
-        this.selectedCheckboxes.push(cb);
+        cb.checked = this.selectedIndices.has(idx);
+        cb.onchange = () => {
+          if (cb.checked) {
+            this.selectedIndices.add(idx);
+          } else {
+            this.selectedIndices.delete(idx);
+          }
+        };
 
         const info = row.createDiv({ attr: { style: "flex: 1;" } });
         info.createEl("div", {
@@ -296,6 +300,11 @@ export class ResearchModal extends Modal {
         this.plugin.settings.pubmedApiKey,
         this.plugin.settings.crossrefEmail
       );
+
+      // Pre-select all results
+      this.selectedIndices = new Set(
+        Array.from({ length: this.results.length }, (_, i) => i)
+      );
     } catch (err) {
       this.error = err instanceof Error ? err.message : String(err);
     } finally {
@@ -322,8 +331,8 @@ export class ResearchModal extends Modal {
       undefined;
 
     const selected = this.results
-      .slice(0, this.selectedCheckboxes.length)
-      .filter((_, i) => this.selectedCheckboxes[i]?.checked);
+      .slice(0, 10)
+      .filter((_, i) => this.selectedIndices.has(i));
 
     if (selected.length === 0) {
       this.error = "Seleccioná al menos un paper.";
