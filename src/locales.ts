@@ -2,6 +2,9 @@ export interface LocaleStrings {
   openNoteFirst: string;
   searchLabel: string;
   searchPlaceholder: string;
+  searchNatural: string;
+  optimizedQuery: string;
+  optimizingQuery: string;
   searching: string;
   searchError: string;
   noResults: string;
@@ -52,6 +55,9 @@ const es: LocaleStrings = {
   openNoteFirst: "Abrí una nota primero",
   searchLabel: "Búsqueda académica",
   searchPlaceholder: "Buscar evidencia científica...",
+  searchNatural: "¿Qué querés investigar?",
+  optimizedQuery: "Query optimizada",
+  optimizingQuery: "Optimizando búsqueda...",
   searching: "Buscando en PubMed y OpenAlex...",
   searchError: "Error en la búsqueda",
   noResults: "No se encontraron resultados. Probá con otros términos.",
@@ -102,6 +108,9 @@ const en: LocaleStrings = {
   openNoteFirst: "Open a note first",
   searchLabel: "Academic search",
   searchPlaceholder: "Search scientific evidence...",
+  searchNatural: "What do you want to research?",
+  optimizedQuery: "Optimized query",
+  optimizingQuery: "Optimizing search...",
   searching: "Searching PubMed and OpenAlex...",
   searchError: "Search error",
   noResults: "No results found. Try different terms.",

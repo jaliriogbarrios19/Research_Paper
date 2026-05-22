@@ -230,6 +230,36 @@ Topic: ${query}\nDomain: ${domain}\n\nEvidence:\n${context}`;
   return callLLM(provider, apiKey, effectiveModel, prompt);
 }
 
+export async function optimizeQuery(
+  provider: LLMProvider,
+  apiKey: string,
+  model: string | undefined,
+  naturalQuery: string
+): Promise<{ optimizedQuery: string; detectedDomain: string }> {
+  const effectiveModel = model || DEFAULT_MODELS[provider];
+
+  const prompt = `You are a research query optimizer. Convert this natural language question into optimized English keywords for PubMed/OpenAlex search. Also detect the most fitting academic domain.
+
+Return ONLY a JSON object with no markdown, no explanations:
+{"optimizedQuery": "keyword1 keyword2 keyword3", "detectedDomain": "psychology"}
+
+Valid domains: psychology, medicine, nursing, biology, education, sociology, economics, law, engineering, general.
+
+Question: ${naturalQuery}`;
+
+  const raw = await callLLM(provider, apiKey, effectiveModel, prompt);
+  try {
+    const cleaned = raw.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    return {
+      optimizedQuery: parsed.optimizedQuery || naturalQuery,
+      detectedDomain: parsed.detectedDomain || "general",
+    };
+  } catch {
+    return { optimizedQuery: naturalQuery, detectedDomain: "general" };
+  }
+}
+
 async function callLLM(
   provider: LLMProvider,
   apiKey: string,

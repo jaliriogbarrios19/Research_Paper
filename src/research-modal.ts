@@ -7,6 +7,7 @@ import {
   generatePaper,
   formatPaper,
   verifyDOIs,
+  optimizeQuery,
 } from "./research-engine";
 import { getModelField } from "./settings";
 
@@ -20,6 +21,8 @@ export class ResearchModal extends Modal {
   private highPrecision = false;
   private loading = false;
   private generating = false;
+  private optimizing = false;
+  private optimizedQuery = "";
   private results: AcademicWork[] = [];
   private selectedCheckboxes: HTMLInputElement[] = [];
   private instructions = "";
@@ -44,7 +47,7 @@ export class ResearchModal extends Modal {
     contentEl.empty();
     contentEl.addClass("research-paper-modal");
 
-    contentEl.createEl("h2", { text: this.L("searchLabel") });
+    contentEl.createEl("h2", { text: this.L("searchNatural") });
 
     const searchRow = contentEl.createDiv({
       attr: { style: "display: flex; gap: 8px; margin-bottom: 12px;" },
@@ -64,6 +67,16 @@ export class ResearchModal extends Modal {
       text: "Buscar",
       cls: "mod-cta",
     }).onclick = () => this.handleSearch();
+
+    if (this.optimizedQuery) {
+      contentEl.createDiv({
+        text: `${this.L("optimizedQuery")}: ${this.optimizedQuery}`,
+        attr: {
+          style:
+            "font-size: 0.85em; color: var(--text-accent); margin-bottom: 8px;",
+        },
+      });
+    }
 
     const optionsRow = contentEl.createDiv({
       attr: {
@@ -124,7 +137,15 @@ export class ResearchModal extends Modal {
           )
       );
 
-    if (this.loading) {
+    if (this.optimizing) {
+      contentEl.createDiv({
+        text: this.L("optimizingQuery"),
+        attr: {
+          style:
+            "padding: 16px; text-align: center; color: var(--text-accent);",
+        },
+      });
+    } else if (this.loading) {
       contentEl.createDiv({
         text: this.L("searching"),
         attr: {
@@ -230,6 +251,15 @@ export class ResearchModal extends Modal {
   private async handleSearch() {
     if (!this.query.trim()) return;
 
+    const provider = this.plugin.settings.llmProvider;
+    const apiKey = this.plugin.getApiKey(provider);
+    if (!apiKey) {
+      this.error = `${this.L("noApiKey")} ${provider}`;
+      this.render();
+      return;
+    }
+
+    this.optimizing = true;
     this.loading = true;
     this.error = null;
     this.results = [];
@@ -237,8 +267,20 @@ export class ResearchModal extends Modal {
     this.render();
 
     try {
+      const modelField = getModelField(provider);
+      const model =
+        (this.plugin.settings as unknown as Record<string, string>)[modelField] ||
+        undefined;
+
+      const optimized = await optimizeQuery(provider, apiKey, model, this.query);
+      this.optimizedQuery = optimized.optimizedQuery;
+
+      if (optimized.detectedDomain && !this.domain) {
+        this.domain = optimized.detectedDomain as ResearchDomain;
+      }
+
       this.results = await searchAcademic(
-        this.query,
+        this.optimizedQuery,
         this.highPrecision,
         this.plugin.settings.pubmedApiKey,
         this.plugin.settings.crossrefEmail
@@ -246,6 +288,7 @@ export class ResearchModal extends Modal {
     } catch (err) {
       this.error = err instanceof Error ? err.message : String(err);
     } finally {
+      this.optimizing = false;
       this.loading = false;
       this.render();
     }
