@@ -1,14 +1,14 @@
-# Research and Paper
+# Research Paper
 
-Search academic databases and generate APA 7 papers using AI — right inside Obsidian.
+AI-assisted research briefs from academic databases — right inside Obsidian.
 
 [![PayPal](https://img.shields.io/badge/PayPal-Donate-blue?logo=paypal)](https://paypal.me/jesusgarciapsi)
 
 ## Quick start
 
-1. Install from **Community Plugins** → search "Research and Paper"
+1. Install from **Community Plugins** → search "Research Paper"
 2. Enable it in Settings → Community Plugins
-3. Open Settings → Research and Paper, pick an LLM provider, paste your API key
+3. Open Settings → Research Paper, pick an LLM provider, paste your API key
 4. Open a note, click the 🔍 ribbon icon, and start researching
 
 The plugin auto-detects your Obsidian language.
@@ -29,56 +29,86 @@ The plugin auto-detects your Obsidian language.
 
 ### 1. Configure your LLM provider
 
-Go to **Settings → Research and Paper**. Select your provider (e.g., OpenAI), paste your API key, and pick a model. GPT-5.5 and Claude Opus 4.7 produce the best academic papers.
+Go to **Settings → Research Paper**. Select your provider (e.g., OpenAI), paste your API key, and pick a model. GPT-5.5 and Claude Opus 4.7 produce the best results.
 
-Optionally, add a **PubMed API Key** (free, increases search rate limits) and your **email** for Crossref polite pool.
+Optionally, add a **PubMed API Key** (free, increases search rate limits) and your **email** for Crossref DOI verification.
 
 ### 2. Search for evidence
 
-Open a note, click the 🔍 ribbon icon or run `Ctrl+P → Research and Paper: buscar y generar`. Type your research question in natural language:
+Open a note, click the 🔍 ribbon icon or run `Ctrl+P → Research Paper: buscar y generar`. Type your research question in natural language — the LLM optimizes it into academic keywords automatically:
 
 > *"What's the evidence on CBT for generalized anxiety disorder?"*
 
 > *"¿Qué dice la literatura sobre terapia cognitivo-conductual en adolescentes con depresión?"*
 
-Select your **domain** (Psychology, Medicine, or General) and **mode** (Quick Answer or Full APA 7 Paper).
+Choose your **domain** (10 options, from Psychology to Engineering), **mode** (Quick Answer or Research Brief), **language** for the output, and a **year range** filter.
 
 ### 3. Review and refine
 
-After searching, you'll see a list of papers. Each one is pre-selected with a checkbox:
+After searching, you'll see a list of articles with relevance scores. Each one is pre-selected with a checkbox:
 
-- **Uncheck** papers that aren't relevant to your focus
+- **Uncheck** articles that aren't relevant to your focus
 - Use the **Extra instructions** field to guide the AI in natural language:
   - *"Focus on efficacy compared to pharmacotherapy"*
   - *"Only include randomized controlled trials"*
-  - *"Compare the approaches and highlight methodological differences"*
 
-### 4. Generate your paper
+### 4. Generate your brief
 
-Click **Generate quick answer** or **Draft full paper**. The result is inserted into your note inside a foldable callout block.
+Click **Generate brief**. The output is a structured Research Brief inserted into your note:
+
+```
+## Research Brief: {Title}
+
+⚠️ AI-assisted brief. All factual data is traceable to the listed sources.
+
+### Research Question
+{Your original query}
+
+### Sources Consulted
+1. Smith, J. et al. (2025). *Journal*. DOI: [10.xxx](https://doi.org/10.xxx)
+   {Summary in your language}
+
+### Findings per Source
+→ Smith et al. (2025) found that...
+
+### Convergences
+• Both studies agree that... (Smith, 2025; García, 2024)
+
+### Divergences
+• Smith reports a large effect; García reports moderate...
+
+### Implications
+{AI-generated synthesis}
+⚠️ This section is AI-generated synthesis.
+```
 
 ## Features
 
-- **Natural language search** — PubMed and OpenAlex handle colloquial queries
-- **Review & Refine** — select exactly which papers to include, add custom instructions
-- **APA 7 formatting** — bilingual titles, abstracts, keywords, in-text citations
+- **Natural language search** — optimized into academic keywords by LLM
+- **Three search sources** — PubMed (biomedical domains), OpenAlex, and Semantic Scholar (214M+ papers)
+- **Research Brief format** — traceable evidence, not fake papers. No fabricated Methods, no false claims
+- **Review & Refine** — select exactly which articles to include, add custom instructions
+- **APA 7 in-text citations** — consistent author-year format throughout
+- **DOI verification** — validates against Crossref API
+- **Year range filter** — All time / Last 3 / 5 / 10 / 20 years
+- **10 research domains** — Psychology, Medicine, Nursing, Biology, Education, Sociology, Economics, Law, Engineering, General
+- **6 output languages** — with mandatory English abstract
 - **Model selector** — 30+ models across 7 providers, updated for 2026
-- **PubMed abstracts** — full abstracts fetched via EFetch API for better context
-- **Two modes** — quick evidence-based answer or full academic paper
 
 ## Search sources
 
 | Database | Coverage | Requires |
 |----------|----------|----------|
-| PubMed | Biomedical & clinical, high rigor | None (API key optional) |
+| PubMed | Biomedical & clinical | None (API key optional) |
 | OpenAlex | Multi-disciplinary, 250M+ works | None |
+| Semantic Scholar | Multi-disciplinary, 214M+ papers | None |
 
 ## Support
 
-Research and Paper is free and open source. If it helps your academic work, consider supporting development:
+Research Paper is free and open source. If it helps your academic work, consider supporting development:
 
 [![PayPal](https://img.shields.io/badge/PayPal-Donate-blue?logo=paypal)](https://paypal.me/jesusgarciapsi)
 
 ## Credits
 
-Created by **Jesús García** & **DeepSeek V4-Pro** · [GitHub](https://github.com/jaliriogbarrios19)
+Created by **Jesús García** & **DeepSeek V4-Pro** · [GitHub](https://github.com/jaliriogbarrios19/Research_Paper)
