@@ -2,6 +2,7 @@ import { AcademicWork, LLMProvider } from "./types";
 
 const PUBMED_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils";
 const OPENALEX_BASE = "https://api.openalex.org/works";
+const S2_BASE = "https://api.semanticscholar.org/graph/v1";
 
 const DEFAULT_MODELS: Record<LLMProvider, string> = {
   openai: "gpt-5.5",
@@ -25,14 +26,16 @@ export async function searchAcademic(
 
   const usePubMed = ["psychology", "medicine", "nursing", "biology"].includes(domain);
 
-  const [pubmed, openalex] = await Promise.allSettled([
+  const [pubmed, openalex, semantic] = await Promise.allSettled([
     usePubMed ? fetchPubMed(meshQuery, pubmedApiKey) : Promise.resolve([] as AcademicWork[]),
     fetchOpenAlex(query, email),
+    fetchSemanticScholar(query),
   ]);
 
   const combined: AcademicWork[] = [];
   if (pubmed.status === "fulfilled") combined.push(...pubmed.value);
   if (openalex.status === "fulfilled") combined.push(...openalex.value);
+  if (semantic.status === "fulfilled") combined.push(...semantic.value);
 
   const seen = new Map<string, AcademicWork>();
   for (const work of combined) {
@@ -173,6 +176,36 @@ async function fetchOpenAlex(
   }));
 }
 
+async function fetchSemanticScholar(query: string): Promise<AcademicWork[]> {
+  try {
+    const params = new URLSearchParams({
+      query,
+      limit: "10",
+      fields: "title,year,authors,journal,externalIds,abstract,url",
+    });
+    const res = await fetch(
+      `${S2_BASE}/paper/search?${params.toString()}`
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+
+    return (data.data ?? []).map((p: any) => ({
+      doi: p.externalIds?.DOI ?? "",
+      title: p.title ?? "",
+      authors:
+        p.authors?.map((a: any) => ({ name: a.name })) ?? [],
+      year: p.year ?? 0,
+      journal: p.journal?.name ?? "",
+      abstract_text: p.abstract ?? "",
+      relevance_score: 0.7,
+      url: p.url ?? (p.externalIds?.DOI ? `https://doi.org/${p.externalIds.DOI}` : ""),
+      mesh_terms: [],
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export async function generatePaper(
   provider: LLMProvider,
   apiKey: string,
@@ -228,13 +261,14 @@ export async function generatePaper(
 ${query}
 
 ### Sources Consulted
-{For EACH source, include: number, full APA citation, DOI as clickable link, and the source's own abstract. Example:
-1. Smith, J. et al. (2025). *Journal*. DOI: [10.xxx](https://doi.org/10.xxx)
-   Abstract: {paste the abstract from the source}
+{For EACH source, include: number, full APA 7 citation with authors, year, title, journal, volume, pages, and DOI as clickable link. Then paste the abstract. Example:
+1. Smith, J., Jones, M., & Lee, K. (2025). Title of the article. *Journal Name*, *12*(3), 45-67. [DOI: 10.xxx](https://doi.org/10.xxx)
+   {paste the abstract verbatim}
 }
+DO NOT add a separate "References" section — the full citations here ARE the references.
 
 ### Findings per Source
-{For EACH source, write 2-4 bullet points summarizing its key findings. Use your own words but stay faithful to the abstract. Include the specific population, method, and effect sizes when available.}
+{For EACH source, write 2-4 bullet points summarizing its key findings with APA 7 in-text citations. Example: Smith et al. (2025) found that... Include population, method, and effect sizes. Start each bullet with the in-text citation.}
 
 ### Convergences
 {2-4 bullet points where multiple sources agree. Cite which sources: (sources 1,3,5)}
@@ -243,13 +277,10 @@ ${query}
 {2-4 bullet points where sources disagree or report different findings. Explain possible reasons (population, method, period).}
 
 ### Implications
-{2-3 paragraphs synthesizing what this evidence means as a whole.}
+{2-3 paragraphs synthesizing what this evidence means as a whole. Use APA 7 in-text citations.}
 > ⚠️ This section is AI-generated synthesis.
 
-### References
-{Numbered list. Each reference MUST match the sources provided above exactly — same DOI, same authors.}
-
-IMPORTANT: This is a RESEARCH BRIEF, not a paper. Do NOT add Introduction, Methods, Discussion, or Conclusion sections. Do NOT claim to have performed analysis. All facts come from the source abstracts provided. Write section headers in ${langName}.${extra}
+IMPORTANT: This is a RESEARCH BRIEF. Do NOT add Introduction, Methods, Discussion, Conclusion, or a separate References section (sources are already cited above). Do NOT claim to have performed analysis. All facts come from the source abstracts provided. Use APA 7 in-text citations throughout. Write section headers in ${langName}.${extra}
 
 Topic: ${query}\nDomain: ${domain}\n\nEvidence:\n${context}`;
 
