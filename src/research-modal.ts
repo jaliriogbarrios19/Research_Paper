@@ -39,14 +39,12 @@ export class ResearchModal extends Modal {
   }
 
   onOpen() {
-    // Prevent accidental close by clicking outside during active operations
     const bg = (this as any).modalEl?.previousElementSibling;
     if (bg) {
       bg.addEventListener("click", (e: MouseEvent) => {
         if (this.generating || this.loading || this.optimizing) {
           e.stopPropagation();
           e.preventDefault();
-          new Notice("El proceso está en curso. Esperá a que termine.");
         }
       }, true);
     }
@@ -56,8 +54,13 @@ export class ResearchModal extends Modal {
 
   close() {
     if (this.generating || this.loading || this.optimizing) {
-      new Notice("El proceso está en curso. Esperá a que termine.");
-      return;
+      const confirmed = confirm(
+        "¿Desea detener el proceso? Se perderá el progreso."
+      );
+      if (!confirmed) return;
+      this.generating = false;
+      this.loading = false;
+      this.optimizing = false;
     }
     super.close();
   }
