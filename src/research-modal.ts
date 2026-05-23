@@ -387,6 +387,7 @@ export class ResearchModal extends Modal {
       this.editor.replaceRange(formatted, this.editor.getCursor());
 
       new Notice(`✓ ${this.L("generationReady")}`);
+      this.generating = false;
       this.close();
     } catch (err) {
       this.error = err instanceof Error ? err.message : String(err);
