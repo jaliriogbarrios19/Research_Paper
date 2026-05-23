@@ -258,7 +258,7 @@ export async function generatePaper(
 
   const prompt =
     mode === "quick"
-      ? `Answer this question using the provided evidence. Be concise and cite sources.${citationRule}\nLanguage: write the answer in ${paperLanguage}.${extra}\n\nQuestion: ${query}\nDomain: ${domain}\n\nEvidence:\n${context}`
+      ? `Answer this question using the provided evidence. Be concise and cite sources using APA 7 in-text format (Author, Year). Do NOT output bare DOIs or URLs as citations.${citationRule}\nLanguage: write the answer in ${paperLanguage}.${extra}\n\nQuestion: ${query}\nDomain: ${domain}\n\nEvidence:\n${context}`
       : `Generate a Research Brief from the provided sources. Use clean markdown (no HTML entities, no LaTeX, no fences). Structure:${citationRule}
 
 ## Research Brief: {concise title in ${langName}}
@@ -269,11 +269,11 @@ export async function generatePaper(
 ${query}
 
 ### Sources Consulted
-{For EACH source, include: number, full APA 7 citation with authors, year, title, journal, volume, pages, and DOI as clickable link. Then paste the abstract. Example:
+{For EACH source, include: number, full APA 7 citation with authors, year, title, journal, volume, pages, and DOI as clickable link. Then write a 2-3 sentence faithful summary of the abstract IN ${langName} (do NOT paste the English abstract — paraphrase it accurately in ${langName}). Example:
 1. Smith, J., Jones, M., & Lee, K. (2025). Title of the article. *Journal Name*, *12*(3), 45-67. [DOI: 10.xxx](https://doi.org/10.xxx)
-   {paste the abstract verbatim}
+   {2-3 sentence summary in ${langName}}
 }
-DO NOT add a separate "References" section — the full citations here ARE the references.
+DO NOT add a separate References section.
 
 ### Findings per Source
 {For EACH source, write 2-4 bullet points summarizing its key findings with APA 7 in-text citations. Example: Smith et al. (2025) found that... Include population, method, and effect sizes. Start each bullet with the in-text citation.}
