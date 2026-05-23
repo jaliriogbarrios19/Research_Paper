@@ -383,11 +383,7 @@ export class ResearchModal extends Modal {
 
       const formatted = formatPaper(verified, this.mode);
 
-      const disclaimer = this.mode === "full"
-        ? `\n> [!warning] ${this.L("aiDisclaimer")}\n>\n> ### ${this.L("verificationTitle")}\n> - [ ] ${this.L("verificationDOIs")}\n> - [ ] ${this.L("verificationAuthors")}\n> - [ ] ${this.L("verificationClaims")}\n> - [ ] ${this.L("verificationMethods")}\n`
-        : "";
-
-      this.editor.replaceRange(formatted + disclaimer, this.editor.getCursor());
+      this.editor.replaceRange(formatted, this.editor.getCursor());
 
       new Notice(`✓ ${this.L("generationReady")}`);
       this.close();

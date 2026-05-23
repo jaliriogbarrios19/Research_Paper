@@ -28,11 +28,13 @@ export interface LocaleStrings {
   generateQuick: string;
   generateFull: string;
   aiDisclaimer: string;
-  verificationTitle: string;
-  verificationDOIs: string;
-  verificationAuthors: string;
-  verificationClaims: string;
-  verificationMethods: string;
+  researchQuestion: string;
+  sourcesConsulted: string;
+  findingsPerSource: string;
+  convergences: string;
+  divergences: string;
+  implications: string;
+  implicationsWarning: string;
   generationFailed: string;
   generationReady: string;
   providerLabel: string;
@@ -82,16 +84,18 @@ const es: LocaleStrings = {
   llmProviderLabel: "Proveedor LLM",
   modeLabel: "Modo",
   quickAnswer: "Respuesta rápida",
-  fullPaper: "Borrador de revisión (APA 7)",
+  fullPaper: "Brief de investigación",
   generating: "Generando...",
   generateQuick: "Generar respuesta rápida",
-  generateFull: "Generar borrador",
-  aiDisclaimer: "⚠️ Borrador generado por IA — Verificá antes de usar. Revisá cada referencia en doi.org.",
-  verificationTitle: "Lista de verificación",
-  verificationDOIs: "Todos los DOIs fueron verificados en doi.org",
-  verificationAuthors: "Los autores citados coinciden con las fuentes proporcionadas",
-  verificationClaims: "Las afirmaciones en Discusión están respaldadas por las fuentes citadas",
-  verificationMethods: "No hay secciones de Método fabricadas ni análisis de datos simulados",
+  generateFull: "Generar brief",
+  aiDisclaimer: "⚠️ Research Brief — Asistido por IA. Todos los datos factuales son trazables a las fuentes.",
+  researchQuestion: "Pregunta de investigación",
+  sourcesConsulted: "Fuentes consultadas",
+  findingsPerSource: "Hallazgos por fuente",
+  convergences: "Convergencias",
+  divergences: "Divergencias",
+  implications: "Implicaciones",
+  implicationsWarning: "⚠️ Esta sección es síntesis generada por IA, no revisión por pares.",
   generationFailed: "Falló la generación",
   generationReady: "Paper generado",
   providerLabel: "Proveedor LLM",
@@ -141,16 +145,18 @@ const en: LocaleStrings = {
   llmProviderLabel: "LLM Provider",
   modeLabel: "Mode",
   quickAnswer: "Quick answer",
-  fullPaper: "Draft literature review (APA 7)",
+  fullPaper: "Research Brief",
   generating: "Generating...",
   generateQuick: "Generate quick answer",
-  generateFull: "Generate draft",
-  aiDisclaimer: "⚠️ AI-Generated Draft — Verify before use. Check every reference at doi.org.",
-  verificationTitle: "Verification Checklist",
-  verificationDOIs: "All DOIs verified at doi.org",
-  verificationAuthors: "Cited authors match the provided sources",
-  verificationClaims: "Claims in Discussion are backed by cited sources",
-  verificationMethods: "No fabricated Methods or simulated data analysis",
+  generateFull: "Generate brief",
+  aiDisclaimer: "⚠️ Research Brief — AI-assisted. All factual data is traceable to the listed sources.",
+  researchQuestion: "Research Question",
+  sourcesConsulted: "Sources Consulted",
+  findingsPerSource: "Findings per Source",
+  convergences: "Convergences",
+  divergences: "Divergences",
+  implications: "Implications",
+  implicationsWarning: "⚠️ This section is AI-generated synthesis, not peer-reviewed.",
   generationFailed: "Generation failed",
   generationReady: "Paper generated",
   providerLabel: "LLM Provider",
