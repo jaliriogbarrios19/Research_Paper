@@ -279,10 +279,10 @@ DO NOT add a separate "References" section — the full citations here ARE the r
 {For EACH source, write 2-4 bullet points summarizing its key findings with APA 7 in-text citations. Example: Smith et al. (2025) found that... Include population, method, and effect sizes. Start each bullet with the in-text citation.}
 
 ### Convergences
-{2-4 bullet points where multiple sources agree. Cite which sources: (sources 1,3,5)}
+{2-4 bullet points where multiple sources agree. Use APA 7 in-text citations like (Smith, 2020; García, 2021). Do NOT use source numbers like 'sources 1,3' — always cite by author and year.}
 
 ### Divergences
-{2-4 bullet points where sources disagree or report different findings. Explain possible reasons (population, method, period).}
+{2-4 bullet points where sources disagree or report different findings. Explain possible reasons (population, method, period). Use APA 7 in-text citations — never source numbers.}
 
 ### Implications
 {2-3 paragraphs synthesizing what this evidence means as a whole. Use APA 7 in-text citations.}
