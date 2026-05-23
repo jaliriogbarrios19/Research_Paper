@@ -318,7 +318,8 @@ export class ResearchModal extends Modal {
         this.optimizedQuery,
         this.highPrecision,
         this.plugin.settings.pubmedApiKey,
-        this.plugin.settings.crossrefEmail
+        this.plugin.settings.crossrefEmail,
+        this.domain
       );
 
       // Pre-select all results

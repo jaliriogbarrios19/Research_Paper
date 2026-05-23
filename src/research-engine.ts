@@ -17,13 +17,16 @@ export async function searchAcademic(
   query: string,
   highPrecision: boolean,
   pubmedApiKey: string,
-  crossrefEmail: string
+  crossrefEmail: string,
+  domain: string = "general"
 ): Promise<AcademicWork[]> {
   const email = crossrefEmail || "hola@neuroscribe.app";
   const meshQuery = highPrecision ? `${query}[MeSH Terms]` : query;
 
+  const usePubMed = ["psychology", "medicine", "nursing", "biology"].includes(domain);
+
   const [pubmed, openalex] = await Promise.allSettled([
-    fetchPubMed(meshQuery, pubmedApiKey),
+    usePubMed ? fetchPubMed(meshQuery, pubmedApiKey) : Promise.resolve([] as AcademicWork[]),
     fetchOpenAlex(query, email),
   ]);
 
