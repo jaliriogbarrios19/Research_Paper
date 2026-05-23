@@ -27,6 +27,12 @@ export interface LocaleStrings {
   generating: string;
   generateQuick: string;
   generateFull: string;
+  aiDisclaimer: string;
+  verificationTitle: string;
+  verificationDOIs: string;
+  verificationAuthors: string;
+  verificationClaims: string;
+  verificationMethods: string;
   generationFailed: string;
   generationReady: string;
   providerLabel: string;
@@ -76,10 +82,16 @@ const es: LocaleStrings = {
   llmProviderLabel: "Proveedor LLM",
   modeLabel: "Modo",
   quickAnswer: "Respuesta rápida",
-  fullPaper: "Paper completo (APA 7)",
+  fullPaper: "Borrador de revisión (APA 7)",
   generating: "Generando...",
   generateQuick: "Generar respuesta rápida",
-  generateFull: "Redactar paper completo",
+  generateFull: "Generar borrador",
+  aiDisclaimer: "⚠️ Borrador generado por IA — Verificá antes de usar. Revisá cada referencia en doi.org.",
+  verificationTitle: "Lista de verificación",
+  verificationDOIs: "Todos los DOIs fueron verificados en doi.org",
+  verificationAuthors: "Los autores citados coinciden con las fuentes proporcionadas",
+  verificationClaims: "Las afirmaciones en Discusión están respaldadas por las fuentes citadas",
+  verificationMethods: "No hay secciones de Método fabricadas ni análisis de datos simulados",
   generationFailed: "Falló la generación",
   generationReady: "Paper generado",
   providerLabel: "Proveedor LLM",
@@ -129,10 +141,16 @@ const en: LocaleStrings = {
   llmProviderLabel: "LLM Provider",
   modeLabel: "Mode",
   quickAnswer: "Quick answer",
-  fullPaper: "Full paper (APA 7)",
+  fullPaper: "Draft literature review (APA 7)",
   generating: "Generating...",
   generateQuick: "Generate quick answer",
-  generateFull: "Draft full paper",
+  generateFull: "Generate draft",
+  aiDisclaimer: "⚠️ AI-Generated Draft — Verify before use. Check every reference at doi.org.",
+  verificationTitle: "Verification Checklist",
+  verificationDOIs: "All DOIs verified at doi.org",
+  verificationAuthors: "Cited authors match the provided sources",
+  verificationClaims: "Claims in Discussion are backed by cited sources",
+  verificationMethods: "No fabricated Methods or simulated data analysis",
   generationFailed: "Generation failed",
   generationReady: "Paper generated",
   providerLabel: "LLM Provider",
