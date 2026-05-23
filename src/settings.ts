@@ -88,7 +88,7 @@ export class SettingsTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName(L("providerLabel"))
-      .setDesc("Proveedor de IA para generar papers")
+      .setDesc("Proveedor de IA para generar briefs de investigación")
       .addDropdown((dropdown) => {
         for (const { value, label } of LLM_PROVIDERS) {
           dropdown.addOption(value, label);
@@ -114,7 +114,7 @@ export class SettingsTab extends PluginSettingTab {
         const modelField = getModelField(provider);
         new Setting(containerEl)
           .setName("Modelo")
-          .setDesc("Modelo de IA a usar para generar papers")
+          .setDesc("Modelo de IA a usar para generar briefs")
           .addDropdown((dropdown) => {
             for (const m of models) {
               dropdown.addOption(m.modelId, `${m.label} — ${m.description}`);

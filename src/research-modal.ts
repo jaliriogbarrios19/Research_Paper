@@ -355,7 +355,7 @@ export class ResearchModal extends Modal {
       .filter((_, i) => this.selectedIndices.has(i));
 
     if (selected.length === 0) {
-      this.error = "Seleccioná al menos un paper.";
+      this.error = "Seleccioná al menos un artículo.";
       this.render();
       return;
     }
