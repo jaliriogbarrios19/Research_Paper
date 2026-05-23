@@ -19,7 +19,8 @@ export async function searchAcademic(
   highPrecision: boolean,
   pubmedApiKey: string,
   crossrefEmail: string,
-  domain: string = "general"
+  domain: string = "general",
+  yearRange: number = 0
 ): Promise<AcademicWork[]> {
   const email = crossrefEmail || "hola@neuroscribe.app";
   const meshQuery = highPrecision ? `${query}[MeSH Terms]` : query;
@@ -49,6 +50,13 @@ export async function searchAcademic(
   result.sort((a, b) => b.relevance_score - a.relevance_score);
 
   const relevant = result.filter((w) => w.relevance_score >= 0.5);
+
+  if (yearRange > 0) {
+    const minYear = new Date().getFullYear() - yearRange;
+    const filtered = relevant.filter((w) => w.year >= minYear);
+    return filtered.slice(0, 10);
+  }
+
   return relevant.slice(0, 10);
 }
 

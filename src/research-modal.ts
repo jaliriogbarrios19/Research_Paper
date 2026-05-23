@@ -18,6 +18,7 @@ export class ResearchModal extends Modal {
   private mode: "quick" | "full" = "quick";
   private domain: ResearchDomain = "psychology";
   private paperLanguage = "es";
+  private yearRange = 10;
   private highPrecision = false;
   private loading = false;
   private generating = false;
@@ -133,6 +134,19 @@ export class ResearchModal extends Modal {
           .addOption("full", this.L("fullPaper"))
           .setValue(this.mode)
           .onChange((v) => (this.mode = v as typeof this.mode))
+      );
+
+    new Setting(optionsRow)
+      .setName("Años")
+      .addDropdown((d) =>
+        d
+          .addOption("0", "Todos")
+          .addOption("3", "Últimos 3")
+          .addOption("5", "Últimos 5")
+          .addOption("10", "Últimos 10")
+          .addOption("20", "Últimos 20")
+          .setValue(String(this.yearRange))
+          .onChange((v) => (this.yearRange = Number(v)))
       );
 
     new Setting(optionsRow)
@@ -322,7 +336,8 @@ export class ResearchModal extends Modal {
         this.highPrecision,
         this.plugin.settings.pubmedApiKey,
         this.plugin.settings.crossrefEmail,
-        this.domain
+        this.domain,
+        this.yearRange
       );
 
       // Pre-select all results
