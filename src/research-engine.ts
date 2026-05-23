@@ -258,7 +258,7 @@ export async function generatePaper(
 
   const prompt =
     mode === "quick"
-      ? `Answer this question using the provided evidence. Be concise and cite sources using APA 7 in-text format (Author, Year). Do NOT output bare DOIs or URLs as citations.${citationRule}\nLanguage: write the answer in ${paperLanguage}.${extra}\n\nQuestion: ${query}\nDomain: ${domain}\n\nEvidence:\n${context}`
+      ? `Answer this question using the provided evidence. Be concise and cite sources using APA 7 in-text format (Author, Year). Do NOT output bare DOIs or URLs as citations. At the end, add a 'References' section with the full APA 7 citations of all sources you cited.${citationRule}\nLanguage: write the answer in ${paperLanguage}.${extra}\n\nQuestion: ${query}\nDomain: ${domain}\n\nEvidence:\n${context}`
       : `Generate a Research Brief from the provided sources. Use clean markdown (no HTML entities, no LaTeX, no fences). Structure:${citationRule}
 
 ## Research Brief: {concise title in ${langName}}
@@ -495,7 +495,7 @@ export function formatPaper(text: string, mode: "quick" | "full"): string {
     .trim();
 
   if (mode === "quick") {
-    return `> [!info]+ Research Answer\n> ${cleaned.replace(/\n/g, "\n> ")}\n\n`;
+    return `\n${cleaned}\n`;
   }
 
   return `\n${cleaned}\n`;
