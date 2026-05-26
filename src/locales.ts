@@ -57,6 +57,9 @@ export interface LocaleStrings {
   langGerman: string;
   langItalian: string;
   supportLabel: string;
+  deepSearchLabel: string;
+  iterationProgress: string;
+  semanticScore: string;
 }
 
 const es: LocaleStrings = {
@@ -118,6 +121,9 @@ const es: LocaleStrings = {
   langGerman: "Deutsch",
   langItalian: "Italiano",
   supportLabel: "☕ Apoyar este plugin",
+  deepSearchLabel: "Deep search",
+  iterationProgress: "Iteración {n}/{total}",
+  semanticScore: "Score semántico",
 };
 
 const en: LocaleStrings = {
@@ -179,6 +185,9 @@ const en: LocaleStrings = {
   langGerman: "German",
   langItalian: "Italian",
   supportLabel: "☕ Support this plugin",
+  deepSearchLabel: "Deep search",
+  iterationProgress: "Iteration {n}/{total}",
+  semanticScore: "Semantic score",
 };
 
 export const LOCALES: Record<string, LocaleStrings> = { es, en };
