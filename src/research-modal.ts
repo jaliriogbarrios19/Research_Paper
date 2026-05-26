@@ -339,6 +339,8 @@ export class ResearchModal extends Modal {
         undefined;
 
       if (this.deepSearch) {
+        this.optimizing = false;
+        this.render();
         const result = await agenticSearch(
           provider,
           apiKey,
@@ -358,6 +360,7 @@ export class ResearchModal extends Modal {
           .join(" | ");
       } else {
         const optimized = await optimizeQuery(provider, apiKey, model, this.query);
+        this.optimizing = false;
         this.optimizedQuery = optimized.variants[0];
 
         if (optimized.detectedDomain && !this.domain) {

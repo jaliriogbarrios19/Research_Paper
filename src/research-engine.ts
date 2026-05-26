@@ -438,9 +438,6 @@ Return ONLY a JSON array (no markdown, no backticks):
       return {
         ...w,
         relevance_score: semScore?.score ?? w.relevance_score,
-        abstract_text: semScore?.reason
-          ? `${w.abstract_text}\n[Relevance: ${semScore.reason}]`
-          : w.abstract_text,
       };
     });
   } catch {
