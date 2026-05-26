@@ -364,10 +364,18 @@ export async function optimizeQuery(
 ): Promise<QueryVariants> {
   const effectiveModel = model || DEFAULT_MODELS[provider];
 
-  const prompt = `You are a research query optimizer. Convert this natural language question into optimized English keywords for PubMed/OpenAlex search. Also detect the most fitting academic domain.
+  const prompt = `You are a research query optimizer for academic databases (PubMed, OpenAlex, Semantic Scholar). Convert this natural language question into MULTIPLE optimized English keyword search variants. Generate exactly 5 variants following this structure:
+
+1. **primary**: core keywords, clean and direct
+2. **synonyms**: same concept with synonyms and alternate phrasings
+3. **mesh**: MeSH-style controlled vocabulary terms (when applicable — use "[MeSH]" suffix per term)
+4. **broader**: wider/broader terms that capture the general domain
+5. **narrower**: more specific terms that drill into sub-topics
+
+Also detect the most fitting academic domain.
 
 Return ONLY a JSON object with no markdown, no explanations:
-{"optimizedQuery": "keyword1 keyword2 keyword3", "detectedDomain": "psychology"}
+{"variants": ["primary keywords", "synonym variant", "mesh variant", "broader variant", "narrower variant"], "detectedDomain": "psychology"}
 
 Valid domains: psychology, medicine, nursing, biology, education, sociology, economics, law, engineering, general.
 
@@ -378,7 +386,9 @@ Question: ${naturalQuery}`;
     const cleaned = raw.replace(/```json\n?/g, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(cleaned);
     return {
-      variants: [parsed.optimizedQuery || naturalQuery],
+      variants: Array.isArray(parsed.variants) && parsed.variants.length > 0
+        ? parsed.variants.filter((v: unknown) => typeof v === "string" && v.trim().length > 0)
+        : [naturalQuery],
       detectedDomain: parsed.detectedDomain || "general",
     };
   } catch {
