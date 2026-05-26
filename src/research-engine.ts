@@ -448,6 +448,105 @@ Return ONLY a JSON array (no markdown, no backticks):
   }
 }
 
+export async function evaluateCoverage(
+  provider: LLMProvider,
+  apiKey: string,
+  model: string | undefined,
+  question: string,
+  works: AcademicWork[]
+): Promise<{ sufficient: boolean; gaps: string; refinedQuery: string }> {
+  const highRelevance = works.filter((w) => w.relevance_score >= 0.7);
+
+  if (highRelevance.length >= 3) {
+    return { sufficient: true, gaps: "", refinedQuery: "" };
+  }
+
+  const effectiveModel = model || DEFAULT_MODELS[provider];
+
+  const summaries = works.map((w, i) =>
+    `${i}: ${w.title} (${w.year}) — score ${w.relevance_score.toFixed(2)}`
+  ).join("\n");
+
+  const prompt = `We searched for "${question}" and found these papers. Only ${highRelevance.length} out of ${works.length} are highly relevant (score >= 0.7). Identify what's missing and suggest a refined search query.
+
+Papers:
+${summaries}
+
+Return ONLY JSON:
+{"gaps": "what key aspects are missing", "refinedQuery": "new optimized keyword search string"}`;
+
+  const raw = await callLLM(provider, apiKey, effectiveModel, prompt);
+  try {
+    const cleaned = raw.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    return {
+      sufficient: false,
+      gaps: parsed.gaps || "Coverage insufficient",
+      refinedQuery: parsed.refinedQuery || question,
+    };
+  } catch {
+    return { sufficient: false, gaps: "Coverage insufficient", refinedQuery: question };
+  }
+}
+
+export async function agenticSearch(
+  provider: LLMProvider,
+  apiKey: string,
+  model: string | undefined,
+  query: string,
+  pubmedApiKey: string,
+  crossrefEmail: string,
+  domain: string,
+  yearRange: number
+): Promise<{ results: AcademicWork[]; iterations: SearchIteration[] }> {
+  const variants = await optimizeQuery(provider, apiKey, model, query);
+  const iterations: SearchIteration[] = [];
+  const seen = new Map<string, AcademicWork>();
+
+  let currentQuery = variants.variants[0];
+  const maxIterations = Math.min(3, variants.variants.length);
+
+  for (let i = 0; i < maxIterations; i++) {
+    const results = await searchAcademic(
+      currentQuery,
+      false,
+      pubmedApiKey,
+      crossrefEmail,
+      variants.detectedDomain || domain,
+      yearRange
+    );
+
+    const reranked = await rerankResults(provider, apiKey, model, query, results);
+
+    for (const w of reranked) {
+      const key = w.doi
+        ? w.doi.replace("https://doi.org/", "").toLowerCase()
+        : w.title.toLowerCase();
+      if (!seen.has(key)) seen.set(key, w);
+    }
+
+    const coverage = await evaluateCoverage(provider, apiKey, model, query, reranked);
+
+    iterations.push({
+      iteration: i + 1,
+      query: currentQuery,
+      results: reranked,
+      coverage: coverage.sufficient,
+      gaps: coverage.gaps || undefined,
+      refinedQuery: coverage.refinedQuery || undefined,
+    });
+
+    if (coverage.sufficient) break;
+
+    currentQuery = coverage.refinedQuery || variants.variants[i + 1] || variants.variants[0];
+  }
+
+  const merged = Array.from(seen.values());
+  merged.sort((a, b) => b.relevance_score - a.relevance_score);
+
+  return { results: merged, iterations };
+}
+
 async function callLLM(
   provider: LLMProvider,
   apiKey: string,
