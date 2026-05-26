@@ -396,6 +396,58 @@ Question: ${naturalQuery}`;
   }
 }
 
+export async function rerankResults(
+  provider: LLMProvider,
+  apiKey: string,
+  model: string | undefined,
+  question: string,
+  works: AcademicWork[]
+): Promise<AcademicWork[]> {
+  if (works.length === 0) return works;
+
+  const effectiveModel = model || DEFAULT_MODELS[provider];
+
+  const papers = works.map((w, i) =>
+    `${i}: ${w.title} (${w.year})\n   Abstract: ${(w.abstract_text || "No abstract").slice(0, 300)}`
+  ).join("\n\n");
+
+  const prompt = `Rate how relevant each paper is to this research question. Score 0.0 (completely irrelevant) to 1.0 (perfect match). Consider: topic alignment, population studied, methodology relevance, and recency.
+
+Question: ${question}
+
+Papers:
+${papers}
+
+Return ONLY a JSON array (no markdown, no backticks):
+[{"index": 0, "score": 0.85, "reason": "Directly studies CBT in adolescents with GAD"}, ...]`;
+
+  const raw = await callLLM(provider, apiKey, effectiveModel, prompt);
+  try {
+    const cleaned = raw.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+    const scores: SemanticScore[] = JSON.parse(cleaned);
+
+    const scoreMap = new Map<number, SemanticScore>();
+    for (const s of scores) {
+      if (typeof s.index === "number" && typeof s.score === "number") {
+        scoreMap.set(s.index, s);
+      }
+    }
+
+    return works.map((w, i) => {
+      const semScore = scoreMap.get(i);
+      return {
+        ...w,
+        relevance_score: semScore?.score ?? w.relevance_score,
+        abstract_text: semScore?.reason
+          ? `${w.abstract_text}\n[Relevance: ${semScore.reason}]`
+          : w.abstract_text,
+      };
+    });
+  } catch {
+    return works;
+  }
+}
+
 async function callLLM(
   provider: LLMProvider,
   apiKey: string,
