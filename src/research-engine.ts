@@ -1,4 +1,4 @@
-import { AcademicWork, LLMProvider } from "./types";
+import { AcademicWork, LLMProvider, QueryVariants, SemanticScore, SearchIteration } from "./types";
 
 const PUBMED_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils";
 const OPENALEX_BASE = "https://api.openalex.org/works";
@@ -361,7 +361,7 @@ export async function optimizeQuery(
   apiKey: string,
   model: string | undefined,
   naturalQuery: string
-): Promise<{ optimizedQuery: string; detectedDomain: string }> {
+): Promise<QueryVariants> {
   const effectiveModel = model || DEFAULT_MODELS[provider];
 
   const prompt = `You are a research query optimizer. Convert this natural language question into optimized English keywords for PubMed/OpenAlex search. Also detect the most fitting academic domain.
@@ -378,11 +378,11 @@ Question: ${naturalQuery}`;
     const cleaned = raw.replace(/```json\n?/g, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(cleaned);
     return {
-      optimizedQuery: parsed.optimizedQuery || naturalQuery,
+      variants: [parsed.optimizedQuery || naturalQuery],
       detectedDomain: parsed.detectedDomain || "general",
     };
   } catch {
-    return { optimizedQuery: naturalQuery, detectedDomain: "general" };
+    return { variants: [naturalQuery], detectedDomain: "general" };
   }
 }
 

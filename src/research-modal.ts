@@ -325,7 +325,7 @@ export class ResearchModal extends Modal {
         undefined;
 
       const optimized = await optimizeQuery(provider, apiKey, model, this.query);
-      this.optimizedQuery = optimized.optimizedQuery;
+      this.optimizedQuery = optimized.variants[0];
 
       if (optimized.detectedDomain && !this.domain) {
         this.domain = optimized.detectedDomain as ResearchDomain;

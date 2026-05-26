@@ -39,6 +39,26 @@ export interface ResearchResponse {
   validated: boolean;
 }
 
+export interface QueryVariants {
+  variants: string[];
+  detectedDomain: string;
+}
+
+export interface SemanticScore {
+  index: number;
+  score: number;
+  reason: string;
+}
+
+export interface SearchIteration {
+  iteration: number;
+  query: string;
+  results: AcademicWork[];
+  coverage: boolean;
+  gaps?: string;
+  refinedQuery?: string;
+}
+
 export type LLMProvider =
   | "openai"
   | "anthropic"
