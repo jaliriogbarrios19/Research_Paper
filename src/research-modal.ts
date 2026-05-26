@@ -8,6 +8,7 @@ import {
   formatPaper,
   verifyDOIs,
   optimizeQuery,
+  agenticSearch,
 } from "./research-engine";
 import { getModelField } from "./settings";
 
@@ -28,6 +29,8 @@ export class ResearchModal extends Modal {
   private selectedIndices: Set<number> = new Set();
   private instructions = "";
   private error: string | null = null;
+  private deepSearch = false;
+  private iterationStatus = "";
 
   constructor(app: App, plugin: ResearchAndPaperPlugin, editor: Editor) {
     super(app);
@@ -158,6 +161,14 @@ export class ResearchModal extends Modal {
       );
 
     new Setting(optionsRow)
+      .setName("Deep search")
+      .addToggle((t) =>
+        t
+          .setValue(this.deepSearch)
+          .onChange((v) => (this.deepSearch = v))
+      );
+
+    new Setting(optionsRow)
       .setName(this.L("paperLanguageLabel"))
       .addDropdown((d) =>
         d
@@ -184,7 +195,9 @@ export class ResearchModal extends Modal {
       });
     } else if (this.loading) {
       contentEl.createDiv({
-        text: this.L("searching"),
+        text: this.deepSearch
+          ? this.iterationStatus || "Deep searching..."
+          : this.L("searching"),
         attr: {
           style:
             "padding: 16px; text-align: center; color: var(--text-muted);",
@@ -316,6 +329,7 @@ export class ResearchModal extends Modal {
     this.error = null;
     this.results = [];
     this.instructions = "";
+    this.iterationStatus = "";
     this.render();
 
     try {
@@ -324,21 +338,41 @@ export class ResearchModal extends Modal {
         (this.plugin.settings as unknown as Record<string, string>)[modelField] ||
         undefined;
 
-      const optimized = await optimizeQuery(provider, apiKey, model, this.query);
-      this.optimizedQuery = optimized.variants[0];
+      if (this.deepSearch) {
+        const result = await agenticSearch(
+          provider,
+          apiKey,
+          model,
+          this.query,
+          this.plugin.settings.pubmedApiKey,
+          this.plugin.settings.crossrefEmail,
+          this.domain,
+          this.yearRange
+        );
+        this.results = result.results;
+        this.optimizedQuery = result.iterations.length > 0
+          ? result.iterations[result.iterations.length - 1].query
+          : this.query;
+        this.iterationStatus = result.iterations
+          .map((it) => `Iter ${it.iteration}: ${it.results.length} papers — ${it.coverage ? "✓" : "refining..."}`)
+          .join(" | ");
+      } else {
+        const optimized = await optimizeQuery(provider, apiKey, model, this.query);
+        this.optimizedQuery = optimized.variants[0];
 
-      if (optimized.detectedDomain && !this.domain) {
-        this.domain = optimized.detectedDomain as ResearchDomain;
+        if (optimized.detectedDomain && !this.domain) {
+          this.domain = optimized.detectedDomain as ResearchDomain;
+        }
+
+        this.results = await searchAcademic(
+          this.optimizedQuery,
+          this.highPrecision,
+          this.plugin.settings.pubmedApiKey,
+          this.plugin.settings.crossrefEmail,
+          this.domain,
+          this.yearRange
+        );
       }
-
-      this.results = await searchAcademic(
-        this.optimizedQuery,
-        this.highPrecision,
-        this.plugin.settings.pubmedApiKey,
-        this.plugin.settings.crossrefEmail,
-        this.domain,
-        this.yearRange
-      );
 
       // Pre-select all results
       this.selectedIndices = new Set(
