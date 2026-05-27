@@ -293,8 +293,6 @@ export async function generateBrief(
 
 ## Research Brief: {concise title in ${langName}}
 
-> ⚠️ AI-assisted brief. All factual data is traceable to the listed sources.
-
 ### ${t("researchQuestion")}
 ${query}
 
@@ -315,7 +313,6 @@ ${query}
 
 ### ${t("implications")}
 {2-3 paragraphs synthesizing what this evidence means as a whole. Use APA 7 in-text citations.}
-> ⚠️ ${paperLanguage === "es" ? "Esta sección es una síntesis generada por IA." : "This section is AI-generated synthesis."}
 
 IMPORTANT: This is a RESEARCH BRIEF, not a paper. Do NOT add Introduction, Methods, Discussion, Conclusion, or a separate References section (sources are already fully cited in Sources Consulted above). Do NOT claim to have performed analysis. All facts come from the source abstracts provided. Use APA 7 in-text citations throughout. All section headers MUST be in ${langName}.${extra}
 

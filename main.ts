@@ -25,7 +25,7 @@ export default class ResearchAndPaperPlugin extends Plugin {
     await this.loadSettings();
     this.addSettingTab(new SettingsTab(this.app, this));
 
-    this.addRibbonIcon("search", "Research Brief", () => {
+    this.addRibbonIcon("search", "Research and Paper", () => {
       const view = this.app.workspace.getActiveViewOfType(MarkdownView);
       if (!view) {
         new Notice(this.L("openNoteFirst"));
@@ -36,7 +36,7 @@ export default class ResearchAndPaperPlugin extends Plugin {
 
     this.addCommand({
       id: "research-and-paper",
-      name: "Research Brief: buscar y generar",
+      name: "Research and Paper: buscar y generar",
       editorCallback: (editor: Editor) => {
         new ResearchModal(this.app, this, editor).open();
       },
