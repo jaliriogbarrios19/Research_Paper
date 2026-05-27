@@ -4,8 +4,8 @@ import { AcademicWork, ResearchDomain } from "./types";
 import { t, type LocaleStrings } from "./locales";
 import {
   searchAcademic,
-  generatePaper,
-  formatPaper,
+  generateBrief,
+  formatBrief,
   verifyDOIs,
   optimizeQuery,
   agenticSearch,
@@ -433,7 +433,7 @@ export class ResearchModal extends Modal {
       this.generating = true;
       this.render();
 
-      const raw = await generatePaper(
+      const raw = await generateBrief(
         provider,
         apiKey,
         model,
@@ -450,7 +450,7 @@ export class ResearchModal extends Modal {
         this.plugin.settings.crossrefEmail
       );
 
-      const formatted = formatPaper(verified, this.mode);
+      const formatted = formatBrief(verified, this.mode);
 
       this.editor.replaceRange(formatted, this.editor.getCursor());
 
