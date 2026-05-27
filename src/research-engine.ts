@@ -2,7 +2,6 @@ import { AcademicWork, LLMProvider, QueryVariants, SemanticScore, SearchIteratio
 
 const PUBMED_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils";
 const OPENALEX_BASE = "https://api.openalex.org/works";
-const S2_BASE = "https://api.semanticscholar.org/graph/v1";
 
 const DEFAULT_MODELS: Record<LLMProvider, string> = {
   openai: "gpt-5.5",
@@ -27,16 +26,14 @@ export async function searchAcademic(
 
   const usePubMed = ["psychology", "medicine", "nursing", "biology"].includes(domain);
 
-  const [pubmed, openalex, semantic] = await Promise.allSettled([
+  const [pubmed, openalex] = await Promise.allSettled([
     usePubMed ? fetchPubMed(meshQuery, pubmedApiKey) : Promise.resolve([] as AcademicWork[]),
     fetchOpenAlex(query, email),
-    fetchSemanticScholar(query),
   ]);
 
   const combined: AcademicWork[] = [];
   if (pubmed.status === "fulfilled") combined.push(...pubmed.value);
   if (openalex.status === "fulfilled") combined.push(...openalex.value);
-  if (semantic.status === "fulfilled") combined.push(...semantic.value);
 
   const seen = new Map<string, AcademicWork>();
   for (const work of combined) {
@@ -186,37 +183,6 @@ async function fetchOpenAlex(
   }));
 }
 
-async function fetchSemanticScholar(query: string): Promise<AcademicWork[]> {
-  try {
-    const params = new URLSearchParams({
-      query,
-      limit: "10",
-      fields: "title,year,authors,journal,externalIds,abstract,url",
-    });
-    const res = await fetch(
-      `${S2_BASE}/paper/search?${params.toString()}`
-    );
-    if (!res.ok) return [];
-    const data = await res.json();
-
-    return (data.data ?? []).map((p: any) => ({
-      doi: p.externalIds?.DOI ?? "",
-      title: p.title ?? "",
-      authors:
-        p.authors?.map((a: any) => ({ name: a.name })) ?? [],
-      year: p.year ?? 0,
-      journal: p.journal?.name ?? "",
-      abstract_text: p.abstract ?? "",
-      relevance_score: 0.7,
-      url: p.url ?? (p.externalIds?.DOI ? `https://doi.org/${p.externalIds.DOI}` : ""),
-      mesh_terms: [],
-      reason: "",
-    }));
-  } catch {
-    return [];
-  }
-}
-
 export async function generateBrief(
   provider: LLMProvider,
   apiKey: string,
@@ -351,10 +317,7 @@ ${query}
 {2-3 paragraphs synthesizing what this evidence means as a whole. Use APA 7 in-text citations.}
 > ⚠️ ${paperLanguage === "es" ? "Esta sección es una síntesis generada por IA." : "This section is AI-generated synthesis."}
 
-### ${t("references")}
-{Numbered list with FULL APA 7 citation for EACH source cited above. Include DOI as clickable link. Do NOT invent new references — only use the exact sources provided.}
-
-IMPORTANT: This is a RESEARCH BRIEF, not a paper. Do NOT add Introduction, Methods, Discussion, or Conclusion sections. Do NOT claim to have performed analysis. All facts come from the source abstracts provided. Use APA 7 in-text citations throughout. All section headers MUST be in ${langName}.${extra}
+IMPORTANT: This is a RESEARCH BRIEF, not a paper. Do NOT add Introduction, Methods, Discussion, Conclusion, or a separate References section (sources are already fully cited in Sources Consulted above). Do NOT claim to have performed analysis. All facts come from the source abstracts provided. Use APA 7 in-text citations throughout. All section headers MUST be in ${langName}.${extra}
 
 Topic: ${query}\nDomain: ${domain}\n\nEvidence:\n${context}`;
 
@@ -369,7 +332,7 @@ export async function optimizeQuery(
 ): Promise<QueryVariants> {
   const effectiveModel = model || DEFAULT_MODELS[provider];
 
-  const prompt = `You are a research query optimizer for academic databases (PubMed, OpenAlex, Semantic Scholar). Convert this natural language question into MULTIPLE optimized English keyword search variants. Generate exactly 5 variants following this structure:
+  const prompt = `You are a research query optimizer for academic databases (PubMed, OpenAlex). Convert this natural language question into MULTIPLE optimized English keyword search variants. Generate exactly 5 variants following this structure:
 
 1. **primary**: core keywords, clean and direct
 2. **synonyms**: same concept with synonyms and alternate phrasings
