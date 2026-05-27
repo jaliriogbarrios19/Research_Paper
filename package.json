@@ -1,7 +1,7 @@
 {
   "name": "research-and-paper",
-  "version": "0.1.5",
-  "description": "Search academic databases and generate APA 7 papers with AI",
+  "version": "0.2.0",
+  "description": "Search academic databases and generate research briefs with AI",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.cjs",
