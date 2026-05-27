@@ -8,6 +8,7 @@ export interface AcademicWork {
   relevance_score: number;
   url: string;
   mesh_terms: string[];
+  reason: string;
 }
 
 export interface SearchOptions {

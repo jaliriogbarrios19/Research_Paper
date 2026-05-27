@@ -260,10 +260,14 @@ export class ResearchModal extends Modal {
         const score = Math.round(work.relevance_score * 100);
         const scoreColor =
           score >= 80 ? "var(--color-green)" : score >= 60 ? "var(--color-orange)" : "var(--text-faint)";
+        const scoreTooltip = work.reason
+          ? `${score}% — ${work.reason}`
+          : `${score}% de relevancia`;
         meta.createEl("span", {
           text: `${score}%`,
           attr: {
-            style: `font-size: 0.75em; background: var(--background-modifier-border); padding: 1px 4px; border-radius: 3px; color: ${scoreColor};`,
+            title: scoreTooltip,
+            style: `font-size: 0.75em; background: var(--background-modifier-border); padding: 1px 4px; border-radius: 3px; color: ${scoreColor}; cursor: help;`,
           },
         });
         if (work.url) {
@@ -314,25 +318,31 @@ export class ResearchModal extends Modal {
   }
 
   private async handleSearch() {
-    if (!this.query.trim()) return;
-
-    const provider = this.plugin.settings.llmProvider;
-    const apiKey = this.plugin.getApiKey(provider);
-    if (!apiKey) {
-      this.error = `${this.L("noApiKey")} ${provider}`;
-      this.render();
-      return;
-    }
-
-    this.optimizing = true;
-    this.loading = true;
-    this.error = null;
-    this.results = [];
-    this.instructions = "";
-    this.iterationStatus = "";
-    this.render();
-
     try {
+      if (!this.query.trim()) {
+        this.error = this.L("emptyQuery");
+        this.render();
+        return;
+      }
+
+      if (this.generating || this.optimizing || this.loading) return;
+
+      const provider = this.plugin.settings.llmProvider;
+      const apiKey = this.plugin.getApiKey(provider);
+      if (!apiKey) {
+        this.error = `${this.L("noApiKey")} ${provider}`;
+        this.render();
+        return;
+      }
+
+      this.optimizing = true;
+      this.loading = true;
+      this.error = null;
+      this.results = [];
+      this.instructions = "";
+      this.iterationStatus = "";
+      this.render();
+
       const modelField = getModelField(provider);
       const model =
         (this.plugin.settings as unknown as Record<string, string>)[modelField] ||
@@ -349,15 +359,18 @@ export class ResearchModal extends Modal {
           this.plugin.settings.pubmedApiKey,
           this.plugin.settings.crossrefEmail,
           this.domain,
-          this.yearRange
+          this.yearRange,
+          (_iteration, allIterations) => {
+            this.iterationStatus = allIterations
+              .map((it) => `Iter ${it.iteration}: ${it.results.length} papers — ${it.coverage ? "suficiente" : "refining..."}`)
+              .join(" | ");
+            this.render();
+          }
         );
         this.results = result.results;
         this.optimizedQuery = result.iterations.length > 0
           ? result.iterations[result.iterations.length - 1].query
           : this.query;
-        this.iterationStatus = result.iterations
-          .map((it) => `Iter ${it.iteration}: ${it.results.length} papers — ${it.coverage ? "✓" : "refining..."}`)
-          .join(" | ");
       } else {
         const optimized = await optimizeQuery(provider, apiKey, model, this.query);
         this.optimizing = false;
@@ -377,11 +390,11 @@ export class ResearchModal extends Modal {
         );
       }
 
-      // Pre-select all results
       this.selectedIndices = new Set(
         Array.from({ length: this.results.length }, (_, i) => i)
       );
     } catch (err) {
+      console.error("[Research Paper] handleSearch error:", err);
       this.error = err instanceof Error ? err.message : String(err);
     } finally {
       this.optimizing = false;
@@ -391,35 +404,35 @@ export class ResearchModal extends Modal {
   }
 
   private async handleGenerate() {
-    if (this.generating) return; // Prevent double-clicks
-
-    const provider = this.plugin.settings.llmProvider;
-    const apiKey = this.plugin.getApiKey(provider);
-    if (!apiKey) {
-      this.error = `${this.L("noApiKey")} ${provider}`;
-      this.render();
-      return;
-    }
-
-    const modelField = getModelField(provider);
-    const model =
-      (this.plugin.settings as unknown as Record<string, string>)[modelField] ||
-      undefined;
-
-    const selected = this.results
-      .slice(0, 10)
-      .filter((_, i) => this.selectedIndices.has(i));
-
-    if (selected.length === 0) {
-      this.error = "Seleccioná al menos un artículo.";
-      this.render();
-      return;
-    }
-
-    this.generating = true;
-    this.render();
-
     try {
+      if (this.generating || this.loading || this.optimizing) return;
+
+      const provider = this.plugin.settings.llmProvider;
+      const apiKey = this.plugin.getApiKey(provider);
+      if (!apiKey) {
+        this.error = `${this.L("noApiKey")} ${provider}`;
+        this.render();
+        return;
+      }
+
+      const modelField = getModelField(provider);
+      const model =
+        (this.plugin.settings as unknown as Record<string, string>)[modelField] ||
+        undefined;
+
+      const selected = this.results
+        .slice(0, 10)
+        .filter((_, i) => this.selectedIndices.has(i));
+
+      if (selected.length === 0) {
+        this.error = "Seleccioná al menos un artículo.";
+        this.render();
+        return;
+      }
+
+      this.generating = true;
+      this.render();
+
       const raw = await generatePaper(
         provider,
         apiKey,
@@ -445,6 +458,7 @@ export class ResearchModal extends Modal {
       this.generating = false;
       this.close();
     } catch (err) {
+      console.error("[Research Paper] handleGenerate error:", err);
       this.error = err instanceof Error ? err.message : String(err);
       this.generating = false;
       this.render();

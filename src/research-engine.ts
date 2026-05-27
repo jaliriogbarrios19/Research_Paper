@@ -116,6 +116,7 @@ async function fetchPubMed(
         ? `https://doi.org/${doi}`
         : `https://pubmed.ncbi.nlm.nih.gov/${id}/`,
       mesh_terms: [],
+      reason: "",
     });
   }
   return works;
@@ -181,6 +182,7 @@ async function fetchOpenAlex(
     relevance_score: w.relevance_score ?? 0.5,
     url: w.doi ?? "",
     mesh_terms: [],
+    reason: "",
   }));
 }
 
@@ -208,6 +210,7 @@ async function fetchSemanticScholar(query: string): Promise<AcademicWork[]> {
       relevance_score: 0.7,
       url: p.url ?? (p.externalIds?.DOI ? `https://doi.org/${p.externalIds.DOI}` : ""),
       mesh_terms: [],
+      reason: "",
     }));
   } catch {
     return [];
@@ -438,6 +441,7 @@ Return ONLY a JSON array (no markdown, no backticks):
       return {
         ...w,
         relevance_score: semScore?.score ?? w.relevance_score,
+        reason: semScore?.reason ?? "",
       };
     });
   } catch {
@@ -494,7 +498,8 @@ export async function agenticSearch(
   pubmedApiKey: string,
   crossrefEmail: string,
   domain: string,
-  yearRange: number
+  yearRange: number,
+  onIteration?: (iteration: SearchIteration, allIterations: SearchIteration[]) => void
 ): Promise<{ results: AcademicWork[]; iterations: SearchIteration[] }> {
   const variants = await optimizeQuery(provider, apiKey, model, query);
   const iterations: SearchIteration[] = [];
@@ -532,6 +537,8 @@ export async function agenticSearch(
       gaps: coverage.gaps || undefined,
       refinedQuery: coverage.refinedQuery || undefined,
     });
+
+    onIteration?.(iterations[iterations.length - 1], [...iterations]);
 
     if (coverage.sufficient) break;
 

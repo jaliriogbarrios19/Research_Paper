@@ -60,6 +60,7 @@ export interface LocaleStrings {
   deepSearchLabel: string;
   iterationProgress: string;
   semanticScore: string;
+  emptyQuery: string;
 }
 
 const es: LocaleStrings = {
@@ -124,6 +125,7 @@ const es: LocaleStrings = {
   deepSearchLabel: "Deep search",
   iterationProgress: "Iteración {n}/{total}",
   semanticScore: "Score semántico",
+  emptyQuery: "Escribí una pregunta de investigación para buscar.",
 };
 
 const en: LocaleStrings = {
@@ -188,6 +190,7 @@ const en: LocaleStrings = {
   deepSearchLabel: "Deep search",
   iterationProgress: "Iteration {n}/{total}",
   semanticScore: "Semantic score",
+  emptyQuery: "Type a research question to search.",
 };
 
 export const LOCALES: Record<string, LocaleStrings> = { es, en };
