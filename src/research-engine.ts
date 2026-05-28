@@ -1,4 +1,5 @@
 import { AcademicWork, LLMProvider, QueryVariants, SemanticScore, SearchIteration } from "./types";
+import { getSpobBaseUrl } from "./settings";
 
 const PUBMED_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils";
 const OPENALEX_BASE = "https://api.openalex.org/works";
@@ -11,6 +12,7 @@ const DEFAULT_MODELS: Record<LLMProvider, string> = {
   openrouter: "openai/gpt-5.5",
   grok: "grok-4.3",
   glm: "glm-4-plus",
+  spob: "deepseek-v4-pro",
 };
 
 export async function searchAcademic(
@@ -541,6 +543,7 @@ async function callOpenAICompat(
     openrouter: "https://openrouter.ai/api",
     grok: "https://api.x.ai",
     glm: "https://api.z.ai",
+    spob: getSpobBaseUrl(),
   };
 
   const baseUrl = baseUrls[provider];

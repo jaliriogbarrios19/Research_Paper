@@ -19,6 +19,9 @@ export interface PluginSettings {
   grokModel: string;
   glmApiKey: string;
   glmModel: string;
+  spobApiKey: string;
+  spobModel: string;
+  spobBaseUrl: string;
   pubmedApiKey: string;
   crossrefEmail: string;
 }
@@ -39,6 +42,9 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   grokModel: "grok-4.3",
   glmApiKey: "",
   glmModel: "glm-4-plus",
+  spobApiKey: "",
+  spobModel: "deepseek-v4-pro",
+  spobBaseUrl: "http://localhost:8080",
   pubmedApiKey: "",
   crossrefEmail: "",
 };
@@ -51,6 +57,7 @@ const API_KEY_FIELDS: Record<LLMProvider, keyof PluginSettings> = {
   openrouter: "openrouterApiKey",
   grok: "grokApiKey",
   glm: "glmApiKey",
+  spob: "spobApiKey",
 };
 
 const MODEL_FIELDS: Record<LLMProvider, keyof PluginSettings> = {
@@ -61,6 +68,7 @@ const MODEL_FIELDS: Record<LLMProvider, keyof PluginSettings> = {
   openrouter: "openrouterModel",
   grok: "grokModel",
   glm: "glmModel",
+  spob: "spobModel",
 };
 
 export function getApiKeyField(provider: LLMProvider): keyof PluginSettings {
@@ -69,6 +77,16 @@ export function getApiKeyField(provider: LLMProvider): keyof PluginSettings {
 
 export function getModelField(provider: LLMProvider): keyof PluginSettings {
   return MODEL_FIELDS[provider];
+}
+
+let spobBaseUrl = "http://localhost:8080";
+
+export function getSpobBaseUrl(): string {
+  return spobBaseUrl;
+}
+
+export function setSpobBaseUrl(url: string): void {
+  spobBaseUrl = url;
 }
 
 export class SettingsTab extends PluginSettingTab {
@@ -133,6 +151,21 @@ export class SettingsTab extends PluginSettingTab {
               });
           });
       }
+    }
+
+    if (provider === "spob") {
+      new Setting(containerEl)
+        .setName("spob Backend URL")
+        .setDesc("URL del servidor spob (por defecto localhost:8080)")
+        .addText((text) => {
+          text
+            .setPlaceholder("http://localhost:8080")
+            .setValue(this.plugin.settings.spobBaseUrl)
+            .onChange(async (value) => {
+              this.plugin.settings.spobBaseUrl = value;
+              await this.plugin.saveSettings();
+            });
+        });
     }
 
     containerEl.createEl("h3", { text: "Bases de datos académicas" });

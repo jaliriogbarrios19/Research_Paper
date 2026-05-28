@@ -67,7 +67,8 @@ export type LLMProvider =
   | "gemini"
   | "openrouter"
   | "grok"
-  | "glm";
+  | "glm"
+  | "spob";
 
 export interface LLMModel {
   modelId: string;
@@ -83,6 +84,7 @@ export const LLM_PROVIDERS: { value: LLMProvider; label: string }[] = [
   { value: "openrouter", label: "OpenRouter" },
   { value: "grok", label: "Grok (xAI)" },
   { value: "glm", label: "GLM (Z.ai)" },
+  { value: "spob", label: "Smart Plugins Obsidian (DeepSeek)" },
 ];
 
 export const LLM_MODELS: Record<LLMProvider, LLMModel[]> = {
@@ -125,5 +127,9 @@ export const LLM_MODELS: Record<LLMProvider, LLMModel[]> = {
     { modelId: "glm-4", label: "GLM-4", description: "Balanced performance/cost." },
     { modelId: "glm-4-flash", label: "GLM-4 Flash", description: "Fast, low-cost." },
     { modelId: "glm-4-air", label: "GLM-4 Air", description: "Ultra-lightweight." },
+  ],
+  spob: [
+    { modelId: "deepseek-v4-pro", label: "DeepSeek V4 Pro (spob)", description: "Top-tier. 1M ctx. Vía spob." },
+    { modelId: "deepseek-v4-flash", label: "DeepSeek V4 Flash (spob)", description: "Fast, cost-efficient. Vía spob." },
   ],
 };

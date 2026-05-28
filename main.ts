@@ -4,6 +4,7 @@ import {
   DEFAULT_SETTINGS,
   SettingsTab,
   getApiKeyField,
+  setSpobBaseUrl,
 } from "./src/settings";
 import { ResearchModal } from "./src/research-modal";
 import { LLMProvider, AcademicWork } from "./src/types";
@@ -47,10 +48,12 @@ export default class ResearchAndPaperPlugin extends Plugin {
 
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    setSpobBaseUrl(this.settings.spobBaseUrl || "http://localhost:8080");
   }
 
   async saveSettings() {
     await this.saveData(this.settings);
+    setSpobBaseUrl(this.settings.spobBaseUrl || "http://localhost:8080");
   }
 
   getApiKey(provider: LLMProvider): string {
