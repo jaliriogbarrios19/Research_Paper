@@ -27,7 +27,7 @@ export interface PluginSettings {
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
-  llmProvider: "openai",
+  llmProvider: "spob",
   openaiApiKey: "",
   openaiModel: "gpt-5.5",
   anthropicApiKey: "",
@@ -44,7 +44,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   glmModel: "glm-4-plus",
   spobApiKey: "",
   spobModel: "deepseek-v4-pro",
-  spobBaseUrl: "http://localhost:8080",
+  spobBaseUrl: "https://spob-backend.fly.dev",
   pubmedApiKey: "",
   crossrefEmail: "",
 };
@@ -79,7 +79,7 @@ export function getModelField(provider: LLMProvider): keyof PluginSettings {
   return MODEL_FIELDS[provider];
 }
 
-let spobBaseUrl = "http://localhost:8080";
+let spobBaseUrl = "https://spob-backend.fly.dev";
 
 export function getSpobBaseUrl(): string {
   return spobBaseUrl;
