@@ -201,6 +201,16 @@ export class SettingsTab extends PluginSettingTab {
     for (const { value, label } of LLM_PROVIDERS) {
       const field = getApiKeyField(value);
       this.addApiKeyField(containerEl, label, field);
+      if (value === "spob") {
+        const spobLink = containerEl.createDiv({
+          cls: "setting-item-description",
+          attr: { style: "margin-top: -8px; margin-bottom: 16px;" },
+        });
+        spobLink.createEl("a", {
+          text: "Obtén tu API key en spob-backend.fly.dev →",
+          href: "https://spob-backend.fly.dev",
+        });
+      }
     }
 
     const support = containerEl.createDiv({

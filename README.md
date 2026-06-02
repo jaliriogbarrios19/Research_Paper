@@ -24,6 +24,9 @@ The plugin auto-detects your Obsidian language.
 | OpenRouter | Routes to all major models |
 | Grok (xAI) | Grok 4.3, Grok 4.20 Reasoning |
 | GLM (Z.ai) | GLM-4 Plus, GLM-4, GLM-4 Flash, GLM-4 Air |
+| **Smart Plugins Obsidian (spob)** | **DeepSeek V4 Pro, V4 Flash** |
+
+> **spob** es el proveedor por defecto. [Obtené tu API key](https://spob-backend.fly.dev) y empezá a generar briefs con DeepSeek al instante — sin configurar nada más.
 
 ## Tutorial
 

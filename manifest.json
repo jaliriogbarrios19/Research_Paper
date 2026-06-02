@@ -1,7 +1,7 @@
 {
   "id": "research-paper",
   "name": "Research Paper",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "minAppVersion": "1.5.0",
   "description": "Search academic databases and generate research briefs with AI. Supports 7 LLM providers and 10 research domains.",
   "author": "Jesús García y DeepSeek V4-Pro (with Opencode and Gentle AI)",
