@@ -1,41 +1,38 @@
 import { App, Editor, Modal, Notice, Setting } from "obsidian";
 import type ResearchAndPaperPlugin from "../main";
-import { AcademicWork, ResearchDomain } from "./types";
+import { ResearchDomain } from "./types";
 import { t, type LocaleStrings } from "./locales";
-import {
-  searchAcademic,
-  generateBrief,
-  formatBrief,
-  verifyDOIs,
-  optimizeQuery,
-  agenticSearch,
-} from "./research-engine";
-import { getModelField } from "./settings";
+import { renderResults } from "./render-results";
+import { handleSearch, handleGenerate, ModalState } from "./modal-handlers";
 
 export class ResearchModal extends Modal {
   private plugin: ResearchAndPaperPlugin;
   private editor: Editor;
-  private query = "";
-  private mode: "quick" | "full" = "quick";
-  private domain: ResearchDomain = "psychology";
-  private paperLanguage = "es";
-  private yearRange = 10;
-  private highPrecision = false;
-  private loading = false;
-  private generating = false;
-  private optimizing = false;
-  private optimizedQuery = "";
-  private results: AcademicWork[] = [];
-  private selectedIndices: Set<number> = new Set();
-  private instructions = "";
-  private error: string | null = null;
-  private deepSearch = false;
-  private iterationStatus = "";
+  state: ModalState;
 
   constructor(app: App, plugin: ResearchAndPaperPlugin, editor: Editor) {
     super(app);
     this.plugin = plugin;
     this.editor = editor;
+    this.state = {
+      plugin,
+      query: "",
+      domain: "general",
+      paperLanguage: "es",
+      mode: "quick",
+      yearRange: 10,
+      highPrecision: false,
+      deepSearch: false,
+      instructions: "",
+      results: [],
+      selectedIndices: new Set(),
+      optimizedQuery: "",
+      iterationStatus: "",
+      generating: false,
+      loading: false,
+      optimizing: false,
+      error: null,
+    };
   }
 
   private L(key: keyof LocaleStrings): string {
@@ -46,7 +43,7 @@ export class ResearchModal extends Modal {
     const bg = (this as any).modalEl?.previousElementSibling;
     if (bg) {
       bg.addEventListener("click", (e: MouseEvent) => {
-        if (this.generating || this.loading || this.optimizing) {
+        if (this.state.generating || this.state.loading || this.state.optimizing) {
           e.stopPropagation();
           e.preventDefault();
         }
@@ -57,20 +54,21 @@ export class ResearchModal extends Modal {
   }
 
   close() {
-    if (this.generating || this.loading || this.optimizing) {
+    if (this.state.generating || this.state.loading || this.state.optimizing) {
       const confirmed = confirm(
         "¿Desea detener el proceso? Se perderá el progreso."
       );
       if (!confirmed) return;
-      this.generating = false;
-      this.loading = false;
-      this.optimizing = false;
+      this.state.generating = false;
+      this.state.loading = false;
+      this.state.optimizing = false;
     }
     super.close();
   }
 
   private render() {
     const { contentEl } = this;
+    const s = this.state;
     contentEl.empty();
     contentEl.addClass("research-paper-modal");
 
@@ -84,20 +82,24 @@ export class ResearchModal extends Modal {
       placeholder: this.L("searchPlaceholder"),
       attr: { style: "flex: 1;" },
     });
-    input.value = this.query;
-    input.oninput = () => (this.query = input.value);
+    input.value = s.query;
+    input.oninput = () => (s.query = input.value);
     input.onkeydown = (e) => {
-      if (e.key === "Enter") this.handleSearch();
+      if (e.key === "Enter") this.doSearch();
     };
 
+    const btnText =
+      s.domain === "bahai" && !s.generating
+        ? this.L("generateFull")
+        : "Buscar";
     searchRow.createEl("button", {
-      text: "Buscar",
+      text: btnText,
       cls: "mod-cta",
-    }).onclick = () => this.handleSearch();
+    }).onclick = () => this.doSearch();
 
-    if (this.optimizedQuery) {
+    if (s.optimizedQuery && s.domain !== "bahai") {
       contentEl.createDiv({
-        text: `${this.L("optimizedQuery")}: ${this.optimizedQuery}`,
+        text: `${this.L("optimizedQuery")}: ${s.optimizedQuery}`,
         attr: {
           style:
             "font-size: 0.85em; color: var(--text-accent); margin-bottom: 8px;",
@@ -123,50 +125,59 @@ export class ResearchModal extends Modal {
         d.addOption("economics", this.L("domainEconomics"));
         d.addOption("law", this.L("domainLaw"));
         d.addOption("engineering", this.L("domainEngineering"));
+        d.addOption("bahai", this.L("domainBahai"));
         d.addOption("general", this.L("domainGeneral"));
-        d.setValue(this.domain).onChange(
-          (v) => (this.domain = v as ResearchDomain)
+        d.setValue(s.domain).onChange(
+          (v) => {
+            s.domain = v as ResearchDomain;
+            s.results = [];
+            s.selectedIndices = new Set();
+            s.optimizedQuery = "";
+            this.render();
+          }
         );
-      })
+      });
 
-    new Setting(optionsRow)
-      .setName(this.L("modeLabel"))
-      .addDropdown((d) =>
-        d
-          .addOption("quick", this.L("quickAnswer"))
-          .addOption("full", this.L("fullPaper"))
-          .setValue(this.mode)
-          .onChange((v) => (this.mode = v as typeof this.mode))
-      );
+    if (s.domain !== "bahai") {
+      new Setting(optionsRow)
+        .setName(this.L("modeLabel"))
+        .addDropdown((d) =>
+          d
+            .addOption("quick", this.L("quickAnswer"))
+            .addOption("full", this.L("fullPaper"))
+            .setValue(s.mode)
+            .onChange((v) => (s.mode = v as typeof s.mode))
+        );
 
-    new Setting(optionsRow)
-      .setName("Años")
-      .addDropdown((d) =>
-        d
-          .addOption("0", "Todos")
-          .addOption("3", "Últimos 3")
-          .addOption("5", "Últimos 5")
-          .addOption("10", "Últimos 10")
-          .addOption("20", "Últimos 20")
-          .setValue(String(this.yearRange))
-          .onChange((v) => (this.yearRange = Number(v)))
-      );
+      new Setting(optionsRow)
+        .setName("Años")
+        .addDropdown((d) =>
+          d
+            .addOption("0", "Todos")
+            .addOption("3", "Últimos 3")
+            .addOption("5", "Últimos 5")
+            .addOption("10", "Últimos 10")
+            .addOption("20", "Últimos 20")
+            .setValue(String(s.yearRange))
+            .onChange((v) => (s.yearRange = Number(v)))
+        );
 
-    new Setting(optionsRow)
-      .setName(this.L("highPrecisionLabel"))
-      .addToggle((t) =>
-        t
-          .setValue(this.highPrecision)
-          .onChange((v) => (this.highPrecision = v))
-      );
+      new Setting(optionsRow)
+        .setName(this.L("highPrecisionLabel"))
+        .addToggle((t) =>
+          t
+            .setValue(s.highPrecision)
+            .onChange((v) => (s.highPrecision = v))
+        );
 
-    new Setting(optionsRow)
-      .setName("Deep search")
-      .addToggle((t) =>
-        t
-          .setValue(this.deepSearch)
-          .onChange((v) => (this.deepSearch = v))
-      );
+      new Setting(optionsRow)
+        .setName("Deep search")
+        .addToggle((t) =>
+          t
+            .setValue(s.deepSearch)
+            .onChange((v) => (s.deepSearch = v))
+        );
+    }
 
     new Setting(optionsRow)
       .setName(this.L("paperLanguageLabel"))
@@ -178,14 +189,11 @@ export class ResearchModal extends Modal {
           .addOption("fr", this.L("langFrench"))
           .addOption("de", this.L("langGerman"))
           .addOption("it", this.L("langItalian"))
-          .setValue(this.paperLanguage)
-          .onChange(
-            (v) =>
-              (this.paperLanguage = v)
-          )
+          .setValue(s.paperLanguage)
+          .onChange((v) => (s.paperLanguage = v))
       );
 
-    if (this.optimizing) {
+    if (s.optimizing) {
       contentEl.createDiv({
         text: this.L("optimizingQuery"),
         attr: {
@@ -193,19 +201,27 @@ export class ResearchModal extends Modal {
             "padding: 16px; text-align: center; color: var(--text-accent);",
         },
       });
-    } else if (this.loading) {
+    } else if (s.loading && s.domain !== "bahai") {
       contentEl.createDiv({
-        text: this.deepSearch
-          ? this.iterationStatus || "Deep searching..."
+        text: s.deepSearch
+          ? s.iterationStatus || "Deep searching..."
           : this.L("searching"),
         attr: {
           style:
             "padding: 16px; text-align: center; color: var(--text-muted);",
         },
       });
+    } else if (s.generating && s.domain === "bahai") {
+      contentEl.createDiv({
+        text: this.L("bahaiGenerating"),
+        attr: {
+          style:
+            "padding: 16px; text-align: center; color: var(--text-accent); font-weight: 600;",
+        },
+      });
     }
 
-    if (this.error) {
+    if (s.error) {
       const errDiv = contentEl.createDiv({
         attr: {
           style:
@@ -213,257 +229,44 @@ export class ResearchModal extends Modal {
         },
       });
       errDiv.createEl("strong", { text: this.L("searchError") });
-      errDiv.createEl("p", { text: this.error });
+      errDiv.createEl("p", { text: s.error });
     }
 
-    if (this.results.length > 0) {
-      contentEl.createDiv({
-        text: this.L("selectPapers"),
-        attr: {
-          style:
-            "font-weight: 600; margin-bottom: 8px; padding-top: 8px; border-top: 1px solid var(--background-modifier-border);",
-        },
-      });
-
-      for (const [idx, work] of this.results.slice(0, 10).entries()) {
-        const row = contentEl.createDiv({
-          attr: {
-            style:
-              "display: flex; align-items: flex-start; gap: 8px; border: 1px solid var(--background-modifier-border); border-radius: 6px; padding: 8px; margin-bottom: 6px;",
-          },
-        });
-
-        const cb = row.createEl("input", {
-          type: "checkbox",
-          attr: { style: "margin-top: 3px; flex-shrink: 0;" },
-        });
-        cb.checked = this.selectedIndices.has(idx);
-        cb.onchange = () => {
-          if (cb.checked) {
-            this.selectedIndices.add(idx);
+    if (s.results.length > 0 && s.domain !== "bahai") {
+      renderResults(contentEl, {
+        L: (k) => this.L(k),
+        results: s.results,
+        selectedIndices: s.selectedIndices,
+        onToggle: (idx) => {
+          if (s.selectedIndices.has(idx)) {
+            s.selectedIndices.delete(idx);
           } else {
-            this.selectedIndices.delete(idx);
+            s.selectedIndices.add(idx);
           }
-        };
-
-        const info = row.createDiv({ attr: { style: "flex: 1;" } });
-        info.createEl("div", {
-          text: work.title,
-          attr: { style: "font-weight: 600; margin-bottom: 2px;" },
-        });
-        const meta = info.createDiv({
-          attr: {
-            style: "display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: var(--text-muted);",
-          },
-        });
-        meta.createEl("span", { text: `${work.year} · ${work.journal}` });
-        const score = Math.round(work.relevance_score * 100);
-        const scoreColor =
-          score >= 80 ? "var(--color-green)" : score >= 60 ? "var(--color-orange)" : "var(--text-faint)";
-        const scoreTooltip = work.reason
-          ? `${score}% — ${work.reason}`
-          : `${score}% de relevancia`;
-        meta.createEl("span", {
-          text: `${score}%`,
-          attr: {
-            title: scoreTooltip,
-            style: `font-size: 0.75em; background: var(--background-modifier-border); padding: 1px 4px; border-radius: 3px; color: ${scoreColor}; cursor: help;`,
-          },
-        });
-        if (work.url) {
-          info.createEl("a", {
-            text: this.L("sourceLabel"),
-            href: work.url,
-            attr: { style: "font-size: 0.8em;" },
-          });
-        }
-      }
-
-      const instructionsDiv = contentEl.createDiv({
-        attr: { style: "margin-top: 12px; margin-bottom: 12px;" },
-      });
-      instructionsDiv.createEl("div", {
-        text: this.L("extraInstructions"),
-        attr: {
-          style: "font-weight: 600; margin-bottom: 4px;",
         },
+        instructions: s.instructions,
+        onInstructionsChange: (v) => (s.instructions = v),
+        generating: s.generating,
+        mode: s.mode,
+        onGenerate: () => this.doGenerate(),
       });
-      const ta = instructionsDiv.createEl("textarea", {
-        placeholder: this.L("extraInstructionsDesc"),
-        attr: {
-          style:
-            "width: 100%; min-height: 60px; font-size: 0.9em;",
-        },
-      });
-      ta.value = this.instructions;
-      ta.oninput = () => (this.instructions = ta.value);
-
-      if (this.generating) {
-        contentEl.createEl("button", {
-          text: this.L("generating"),
-          cls: "mod-cta",
-          attr: { style: "width: 100%; opacity: 0.6;" },
-        }).setAttr("disabled", "true");
-      } else {
-        contentEl.createEl("button", {
-          text:
-            this.mode === "quick"
-              ? this.L("generateQuick")
-              : this.L("generateFull"),
-          cls: "mod-cta",
-          attr: { style: "width: 100%;" },
-        }).onclick = () => this.handleGenerate();
-      }
     }
   }
 
-  private async handleSearch() {
-    try {
-      if (!this.query.trim()) {
-        this.error = this.L("emptyQuery");
-        this.render();
-        return;
-      }
-
-      if (this.generating || this.optimizing || this.loading) return;
-
-      const provider = this.plugin.settings.llmProvider;
-      const apiKey = this.plugin.getApiKey(provider);
-      if (!apiKey) {
-        this.error = `${this.L("noApiKey")} ${provider}`;
-        this.render();
-        return;
-      }
-
-      this.optimizing = true;
-      this.loading = true;
-      this.error = null;
-      this.results = [];
-      this.instructions = "";
-      this.iterationStatus = "";
-      this.render();
-
-      const modelField = getModelField(provider);
-      const model =
-        (this.plugin.settings as unknown as Record<string, string>)[modelField] ||
-        undefined;
-
-      if (this.deepSearch) {
-        this.optimizing = false;
-        this.render();
-        const result = await agenticSearch(
-          provider,
-          apiKey,
-          model,
-          this.query,
-          this.plugin.settings.pubmedApiKey,
-          this.plugin.settings.crossrefEmail,
-          this.domain,
-          this.yearRange,
-          (_iteration, allIterations) => {
-            this.iterationStatus = allIterations
-              .map((it) => `Iter ${it.iteration}: ${it.results.length} papers — ${it.coverage ? "suficiente" : "refining..."}`)
-              .join(" | ");
-            this.render();
-          }
-        );
-        this.results = result.results;
-        this.optimizedQuery = result.iterations.length > 0
-          ? result.iterations[result.iterations.length - 1].query
-          : this.query;
-      } else {
-        const optimized = await optimizeQuery(provider, apiKey, model, this.query);
-        this.optimizing = false;
-        this.optimizedQuery = optimized.variants[0];
-
-        if (optimized.detectedDomain && !this.domain) {
-          this.domain = optimized.detectedDomain as ResearchDomain;
-        }
-
-        this.results = await searchAcademic(
-          this.optimizedQuery,
-          this.highPrecision,
-          this.plugin.settings.pubmedApiKey,
-          this.plugin.settings.crossrefEmail,
-          this.domain,
-          this.yearRange
-        );
-      }
-
-      this.selectedIndices = new Set(
-        Array.from({ length: this.results.length }, (_, i) => i)
-      );
-    } catch (err) {
-      console.error("[Research Paper] handleSearch error:", err);
-      this.error = err instanceof Error ? err.message : String(err);
-    } finally {
-      this.optimizing = false;
-      this.loading = false;
-      this.render();
+  private async doSearch() {
+    await handleSearch(this.state, () => this.render());
+    if (this.state.domain === "bahai") {
+      await this.doGenerate();
     }
   }
 
-  private async handleGenerate() {
-    try {
-      if (this.generating || this.loading || this.optimizing) return;
-
-      const provider = this.plugin.settings.llmProvider;
-      const apiKey = this.plugin.getApiKey(provider);
-      if (!apiKey) {
-        this.error = `${this.L("noApiKey")} ${provider}`;
-        this.render();
-        return;
-      }
-
-      const modelField = getModelField(provider);
-      const model =
-        (this.plugin.settings as unknown as Record<string, string>)[modelField] ||
-        undefined;
-
-      const selected = this.results
-        .slice(0, 10)
-        .filter((_, i) => this.selectedIndices.has(i));
-
-      if (selected.length === 0) {
-        this.error = "Seleccioná al menos un artículo.";
-        this.render();
-        return;
-      }
-
-      this.generating = true;
-      this.render();
-
-      const raw = await generateBrief(
-        provider,
-        apiKey,
-        model,
-        this.query,
-        selected,
-        this.domain,
-        this.mode,
-        this.paperLanguage,
-        this.instructions
-      );
-
-      const verified = await verifyDOIs(
-        raw,
-        this.plugin.settings.crossrefEmail
-      );
-
-      const formatted = formatBrief(verified, this.mode);
-
-      this.editor.replaceRange(formatted, this.editor.getCursor());
-
-      new Notice(`✓ ${this.L("generationReady")}`);
-      this.generating = false;
-      this.close();
-    } catch (err) {
-      console.error("[Research Paper] handleGenerate error:", err);
-      this.error = err instanceof Error ? err.message : String(err);
-      this.generating = false;
-      this.render();
-      new Notice(`✗ ${this.L("generationFailed")}: ${this.error}`);
-    }
+  private async doGenerate() {
+    await handleGenerate(
+      this.state,
+      this.editor,
+      () => this.close(),
+      () => this.render()
+    );
   }
 
   onClose() {

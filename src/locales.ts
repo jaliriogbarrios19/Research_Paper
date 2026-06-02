@@ -20,6 +20,9 @@ export interface LocaleStrings {
   domainLaw: string;
   domainEngineering: string;
   domainGeneral: string;
+  domainBahai: string;
+  bahaiGenerating: string;
+  bahaiReady: string;
   llmProviderLabel: string;
   modeLabel: string;
   quickAnswer: string;
@@ -85,6 +88,9 @@ const es: LocaleStrings = {
   domainLaw: "Derecho",
   domainEngineering: "Ingeniería e Informática",
   domainGeneral: "General",
+  domainBahai: "Fe Bahá'í",
+  bahaiGenerating: "Generando brief Bahá'í...",
+  bahaiReady: "Brief Bahá'í generado",
   llmProviderLabel: "Proveedor LLM",
   modeLabel: "Modo",
   quickAnswer: "Respuesta rápida",
@@ -150,6 +156,9 @@ const en: LocaleStrings = {
   domainLaw: "Law",
   domainEngineering: "Engineering & CS",
   domainGeneral: "General",
+  domainBahai: "Bahá'í Faith",
+  bahaiGenerating: "Generating Bahá'í brief...",
+  bahaiReady: "Bahá'í brief generated",
   llmProviderLabel: "LLM Provider",
   modeLabel: "Mode",
   quickAnswer: "Quick answer",

@@ -27,6 +27,7 @@ export type ResearchDomain =
   | "economics"
   | "law"
   | "engineering"
+  | "bahai"
   | "general";
 
 export interface CitationResult {
