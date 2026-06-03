@@ -45,18 +45,11 @@ jobs:
         with:
           subject-path: styles.css
 
-      - name: Normalize tag (strip v prefix)
-        id: tag
-        run: |
-          TAG="${{ github.ref_name }}"
-          CLEAN="${TAG#v}"
-          echo "version=${CLEAN}" >> $GITHUB_OUTPUT
-
       - name: Create release and upload assets
         run: |
-          gh release create ${{ steps.tag.outputs.version }} \
-            --title "Research and Paper ${{ steps.tag.outputs.version }}" \
+          gh release create ${{ github.ref_name }} \
+            --title "Research and Paper ${{ github.ref_name }}" \
             --generate-notes \
-            main.js manifest.json styles.css versions.json
+            main.js manifest.json styles.css
         env:
           GH_TOKEN: ${{ github.token }}
