@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "[0-9]*.[0-9]*.[0-9]*"
+      - "v[0-9]*.[0-9]*.[0-9]*"
 
 permissions:
   contents: write
@@ -16,6 +17,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate tag (no v prefix)
+        if: startsWith(github.ref_name, 'v')
+        run: |
+          echo "::error::Tag '${{ github.ref_name }}' has a 'v' prefix. Obsidian requires tags without 'v' (e.g. 0.6.0 not v0.6.0). Use: git tag 0.6.0"
+          exit 1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -38,11 +45,18 @@ jobs:
         with:
           subject-path: styles.css
 
+      - name: Normalize tag (strip v prefix)
+        id: tag
+        run: |
+          TAG="${{ github.ref_name }}"
+          CLEAN="${TAG#v}"
+          echo "version=${CLEAN}" >> $GITHUB_OUTPUT
+
       - name: Create release and upload assets
         run: |
-          gh release create ${{ github.ref_name }} \
-            --title "Research and Paper ${{ github.ref_name }}" \
+          gh release create ${{ steps.tag.outputs.version }} \
+            --title "Research and Paper ${{ steps.tag.outputs.version }}" \
             --generate-notes \
-            main.js manifest.json styles.css
+            main.js manifest.json styles.css versions.json
         env:
           GH_TOKEN: ${{ github.token }}
