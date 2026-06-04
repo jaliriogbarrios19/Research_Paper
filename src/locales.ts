@@ -64,6 +64,7 @@ export interface LocaleStrings {
   iterationProgress: string;
   semanticScore: string;
   emptyQuery: string;
+  spobBanner: string;
 }
 
 const es: LocaleStrings = {
@@ -132,6 +133,7 @@ const es: LocaleStrings = {
   iterationProgress: "Iteración {n}/{total}",
   semanticScore: "Score semántico",
   emptyQuery: "Escribí una pregunta de investigación para buscar.",
+  spobBanner: "Hola, soy Jesús García, un psicólogo que se ha interesado en el desarrollo web para optimizar sus flujos de trabajo. Si deseas apoyar nuestro trabajo, puedes hacer una donación o utilizar nuestros servicios a un costo razonable.",
 };
 
 const en: LocaleStrings = {
@@ -200,6 +202,7 @@ const en: LocaleStrings = {
   iterationProgress: "Iteration {n}/{total}",
   semanticScore: "Semantic score",
   emptyQuery: "Type a research question to search.",
+  spobBanner: "Hi, I'm Jesús García, a psychologist who became interested in web development to optimize my workflows and now uses Obsidian comprehensively across the different roles of my daily life. If you'd like to support our work, you can make a donation or use our services at a reasonable cost.",
 };
 
 export const LOCALES: Record<string, LocaleStrings> = { es, en };
