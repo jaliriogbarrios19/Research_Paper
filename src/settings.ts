@@ -104,6 +104,8 @@ export class SettingsTab extends PluginSettingTab {
 
     containerEl.createEl("h2", { text: "Research and Paper" });
 
+    this.addSpobBanner(containerEl);
+
     new Setting(containerEl)
       .setName(L("providerLabel"))
       .setDesc("Proveedor de IA para generar briefs de investigación")
@@ -222,6 +224,27 @@ export class SettingsTab extends PluginSettingTab {
     support.createEl("a", {
       text: L("supportLabel"),
       href: "https://paypal.me/jesusgarciapsi",
+    });
+  }
+
+  private addSpobBanner(container: HTMLElement): void {
+    const banner = container.createDiv({
+      attr: {
+        style:
+          "background: var(--background-modifier-border); border-radius: 8px; padding: 14px 16px; margin-bottom: 20px; font-size: 0.92rem; line-height: 1.6;",
+      },
+    });
+    banner.createEl("p", {
+      text: "Hola, soy Jesús García, un psicólogo que se ha interesado en el desarrollo web para optimizar sus flujos de trabajo. Si deseas apoyar nuestro trabajo, puedes hacer una donación o utilizar nuestros servicios a un costo razonable.",
+    });
+    const links = banner.createDiv({ attr: { style: "margin-top: 10px; display: flex; gap: 16px;" } });
+    links.createEl("a", {
+      text: "☕ Donar vía PayPal",
+      href: "https://paypal.me/jesusgarciapsi",
+    });
+    links.createEl("a", {
+      text: "🚀 Servicios SPOB",
+      href: "https://spob-backend.fly.dev",
     });
   }
 
