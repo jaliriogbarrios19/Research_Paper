@@ -168,6 +168,28 @@ export class SettingsTab extends PluginSettingTab {
               await this.plugin.saveSettings();
             });
         });
+
+      new Setting(containerEl)
+        .setName("Probar conexión")
+        .setDesc("Verifica que la API key de spob funciona")
+        .addButton((btn) =>
+          btn.setButtonText("Probar").onClick(async () => {
+            btn.setDisabled(true);
+            btn.setButtonText("Probando...");
+            const key = this.plugin.settings.spobApiKey;
+            const url = this.plugin.settings.spobBaseUrl || "https://spob-backend.fly.dev";
+            let ok = false;
+            if (key) {
+              try {
+                const res = await fetch(`${url}/health`, { headers: { Authorization: `Bearer ${key}` } });
+                ok = res.ok;
+              } catch { /* offline */ }
+            }
+            btn.setButtonText(ok ? "✓ Conectado" : "✗ Falló");
+            setTimeout(() => btn.setButtonText("Probar"), 3000);
+            btn.setDisabled(false);
+          })
+        );
     }
 
     containerEl.createEl("h3", { text: "Bases de datos académicas" });

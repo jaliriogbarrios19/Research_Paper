@@ -1,7 +1,7 @@
 {
   "id": "research-paper",
   "name": "Research Paper",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "minAppVersion": "1.5.0",
   "description": "Search academic databases and generate research briefs with AI. Supports 8 LLM providers, 11 research domains including Bahá'í Faith.",
   "author": "Jesús García y DeepSeek V4-Pro (with Opencode and Gentle AI)",

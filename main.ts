@@ -13,6 +13,7 @@ import { searchAcademic, generateBrief, verifyDOIs } from "./src/research-engine
 
 export default class ResearchAndPaperPlugin extends Plugin {
   settings!: PluginSettings;
+  private statusBarItemEl: HTMLElement | null = null;
 
   getLocale(): "es" | "en" {
     return moment.locale().startsWith("es") ? "es" : "en";
@@ -25,6 +26,8 @@ export default class ResearchAndPaperPlugin extends Plugin {
   async onload() {
     await this.loadSettings();
     this.addSettingTab(new SettingsTab(this.app, this));
+
+    this.statusBarItemEl = this.addStatusBarItem();
 
     this.addRibbonIcon("search", "Research and Paper", () => {
       const view = this.app.workspace.getActiveViewOfType(MarkdownView);
@@ -42,6 +45,8 @@ export default class ResearchAndPaperPlugin extends Plugin {
         new ResearchModal(this.app, this, editor).open();
       },
     });
+
+    this.updateCredits();
   }
 
   onunload() {}
@@ -54,10 +59,32 @@ export default class ResearchAndPaperPlugin extends Plugin {
   async saveSettings() {
     await this.saveData(this.settings);
     setSpobBaseUrl(this.settings.spobBaseUrl || "http://localhost:8080");
+    this.updateCredits();
   }
 
   getApiKey(provider: LLMProvider): string {
     const field = getApiKeyField(provider);
     return (this.settings as unknown as Record<string, string>)[field] ?? "";
+  }
+
+  updateCredits() {
+    const s = this.settings;
+    if (s.llmProvider !== "spob" || !s.spobApiKey) {
+      if (this.statusBarItemEl) this.statusBarItemEl.setText("");
+      return;
+    }
+    const baseUrl = s.spobBaseUrl || "https://spob-backend.fly.dev";
+    fetch(`${baseUrl}/me`, {
+      headers: { Authorization: `Bearer ${s.spobApiKey}` },
+    })
+      .then((res) => {
+        if (!res.ok) return;
+        res.json().then((data: { credits?: number }) => {
+          if (data.credits != null && this.statusBarItemEl) {
+            this.statusBarItemEl.setText(`spob: $${Number(data.credits).toFixed(4)}`);
+          }
+        });
+      })
+      .catch(() => {});
   }
 }
