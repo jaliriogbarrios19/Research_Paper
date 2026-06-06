@@ -187,7 +187,7 @@ export class SettingsTab extends PluginSettingTab {
               } catch { /* offline */ }
             }
             btn.setButtonText(ok ? "✓ Conectado" : "✗ Falló");
-            window.setTimeout(() => btn.setButtonText("Probar"), 3000);
+            window.setTimeout(() => { btn.setButtonText("Probar"); }, 3000);
             btn.setDisabled(false);
             })();
           })
