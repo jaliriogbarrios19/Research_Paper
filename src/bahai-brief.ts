@@ -72,7 +72,6 @@ export async function verifyBahaiCitations(text: string): Promise<string> {
 
   let match;
   while ((match = citationRegex.exec(text)) !== null) {
-    const quotedText = match[1]?.trim();
     const citation = (match[2] || match[3] || "").trim();
     if (citation && citation.length > 2 && citation.length < 200) {
       if (!sourceNames.has(citation)) {

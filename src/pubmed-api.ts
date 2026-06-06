@@ -1,3 +1,4 @@
+import { requestUrl } from "obsidian";
 import { AcademicWork } from "./types";
 
 const PUBMED_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils";
@@ -14,11 +15,11 @@ export async function fetchPubMed(
   });
   if (apiKey) params.set("api_key", apiKey);
 
-  const searchRes = await fetch(
-    `${PUBMED_BASE}/esearch.fcgi?${params.toString()}`
-  );
-  if (!searchRes.ok) throw new Error(`PubMed HTTP ${searchRes.status}`);
-  const searchData = await searchRes.json();
+  const searchRes = await requestUrl({
+    url: `${PUBMED_BASE}/esearch.fcgi?${params.toString()}`,
+  });
+  if (searchRes.status < 200 || searchRes.status >= 300) throw new Error(`PubMed HTTP ${searchRes.status}`);
+  const searchData = searchRes.json as { esearchresult?: { idlist?: string[] } };
   const ids: string[] = searchData.esearchresult?.idlist ?? [];
   if (ids.length === 0) return [];
 
@@ -29,11 +30,22 @@ export async function fetchPubMed(
   });
   if (apiKey) summaryParams.set("api_key", apiKey);
 
-  const sumRes = await fetch(
-    `${PUBMED_BASE}/esummary.fcgi?${summaryParams.toString()}`
-  );
-  if (!sumRes.ok) throw new Error(`PubMed summary HTTP ${sumRes.status}`);
-  const sumData = await sumRes.json();
+  const sumRes = await requestUrl({
+    url: `${PUBMED_BASE}/esummary.fcgi?${summaryParams.toString()}`,
+  });
+  if (sumRes.status < 200 || sumRes.status >= 300) throw new Error(`PubMed summary HTTP ${sumRes.status}`);
+  const sumData = sumRes.json as {
+    result?: Record<
+      string,
+      {
+        articleids?: Array<{ idtype: string; value: string }>;
+        title?: string;
+        authors?: Array<{ name: string }>;
+        pubdate?: string;
+        fulljournalname?: string;
+      }
+    >;
+  };
 
   const abstracts = await fetchAbstracts(ids, apiKey);
 
@@ -78,12 +90,12 @@ async function fetchAbstracts(
     });
     if (apiKey) params.set("api_key", apiKey);
 
-    const res = await fetch(
-      `${PUBMED_BASE}/efetch.fcgi?${params.toString()}`
-    );
-    if (!res.ok) return result;
+    const res = await requestUrl({
+      url: `${PUBMED_BASE}/efetch.fcgi?${params.toString()}`,
+    });
+    if (res.status < 200 || res.status >= 300) return result;
 
-    const xml = await res.text();
+    const xml = res.text;
     const abstractRegex =
       /<PubmedArticle>[\s\S]*?<PMID[^>]*>(\d+)<\/PMID>[\s\S]*?<AbstractText[^>]*>([\s\S]*?)<\/AbstractText>/gi;
 

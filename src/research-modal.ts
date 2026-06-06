@@ -1,4 +1,4 @@
-import { App, Editor, Modal, Notice, Setting } from "obsidian";
+import { App, Editor, Modal, Setting } from "obsidian";
 import type ResearchAndPaperPlugin from "../main";
 import { ResearchDomain } from "./types";
 import { t, type LocaleStrings } from "./locales";
@@ -40,9 +40,9 @@ export class ResearchModal extends Modal {
   }
 
   onOpen() {
-    const bg = (this as any).modalEl?.previousElementSibling;
+    const bg = this.modalEl?.previousElementSibling;
     if (bg) {
-      bg.addEventListener("click", (e: MouseEvent) => {
+      bg.addEventListener("click", (e: Event) => {
         if (this.state.generating || this.state.loading || this.state.optimizing) {
           e.stopPropagation();
           e.preventDefault();
@@ -55,7 +55,7 @@ export class ResearchModal extends Modal {
 
   close() {
     if (this.state.generating || this.state.loading || this.state.optimizing) {
-      const confirmed = confirm(
+      const confirmed = window.confirm(
         "¿Desea detener el proceso? Se perderá el progreso."
       );
       if (!confirmed) return;
@@ -85,7 +85,7 @@ export class ResearchModal extends Modal {
     input.value = s.query;
     input.oninput = () => (s.query = input.value);
     input.onkeydown = (e) => {
-      if (e.key === "Enter") this.doSearch();
+      if (e.key === "Enter") { void this.doSearch(); }
     };
 
     const btnText =
@@ -248,7 +248,7 @@ export class ResearchModal extends Modal {
         onInstructionsChange: (v) => (s.instructions = v),
         generating: s.generating,
         mode: s.mode,
-        onGenerate: () => this.doGenerate(),
+        onGenerate: () => { void this.doGenerate(); },
       });
     }
   }

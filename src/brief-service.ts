@@ -1,5 +1,6 @@
 import { AcademicWork, LLMProvider } from "./types";
 import { callLLM, DEFAULT_MODELS } from "./llm-client";
+import { requestUrl } from "obsidian";
 
 export async function generateBrief(
   provider: LLMProvider,
@@ -143,7 +144,7 @@ export async function verifyDOIs(
   text: string,
   crossrefEmail: string
 ): Promise<string> {
-  const doiRegex = /(?:\[DOI:\s*|https?:\/\/doi\.org\/)(10\.\d{4,}\/[^\s\]\)\]]+)/gi;
+  const doiRegex = /(?:\[DOI:\s*|https?:\/\/doi\.org\/)(10\.\d{4,}\/[^\s\])\]]+)/gi;
   const email = crossrefEmail || "hola@neuroscribe.app";
   const dois = new Map<string, string>();
 
@@ -160,11 +161,10 @@ export async function verifyDOIs(
 
   for (const doi of dois.values()) {
     try {
-      const res = await fetch(
-        `https://api.crossref.org/works/${encodeURIComponent(doi)}?mailto=${encodeURIComponent(email)}`,
-        { signal: AbortSignal.timeout(5000) }
-      );
-      if (res.ok) {
+      const res = await requestUrl({
+        url: `https://api.crossref.org/works/${encodeURIComponent(doi)}?mailto=${encodeURIComponent(email)}`,
+      });
+      if (res.status >= 200 && res.status < 300) {
         validDois.add(doi);
       } else if (res.status === 404) {
         invalidDois.add(doi);

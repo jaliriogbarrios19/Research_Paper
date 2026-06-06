@@ -1,3 +1,4 @@
+import { requestUrl } from "obsidian";
 import { LLMProvider } from "./types";
 import { getSpobBaseUrl } from "./settings";
 
@@ -45,7 +46,8 @@ async function callOpenAICompat(
 
   const baseUrl = baseUrls[provider];
 
-  const res = await fetch(`${baseUrl}/v1/chat/completions`, {
+  const res = await requestUrl({
+    url: `${baseUrl}/v1/chat/completions`,
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -57,12 +59,12 @@ async function callOpenAICompat(
     }),
   });
 
-  if (!res.ok) {
-    const err = await res.text().catch(() => "");
+  if (res.status < 200 || res.status >= 300) {
+    const err = res.text;
     throw new Error(`${provider} HTTP ${res.status}: ${err.slice(0, 200)}`);
   }
 
-  const data = await res.json();
+  const data = res.json as { choices?: Array<{ message?: { content?: string } }> };
   return data.choices?.[0]?.message?.content ?? "";
 }
 
@@ -71,7 +73,8 @@ async function callAnthropic(
   model: string,
   prompt: string
 ): Promise<string> {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const res = await requestUrl({
+    url: "https://api.anthropic.com/v1/messages",
     method: "POST",
     headers: {
       "x-api-key": apiKey,
@@ -85,12 +88,12 @@ async function callAnthropic(
     }),
   });
 
-  if (!res.ok) {
-    const err = await res.text().catch(() => "");
+  if (res.status < 200 || res.status >= 300) {
+    const err = res.text;
     throw new Error(`Anthropic HTTP ${res.status}: ${err.slice(0, 200)}`);
   }
 
-  const data = await res.json();
+  const data = res.json as { content?: Array<{ text?: string }> };
   return data.content?.[0]?.text ?? "";
 }
 
@@ -99,22 +102,20 @@ async function callGemini(
   model: string,
   prompt: string
 ): Promise<string> {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-      }),
-    }
-  );
+  const res = await requestUrl({
+    url: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+    }),
+  });
 
-  if (!res.ok) {
-    const err = await res.text().catch(() => "");
+  if (res.status < 200 || res.status >= 300) {
+    const err = res.text;
     throw new Error(`Gemini HTTP ${res.status}: ${err.slice(0, 200)}`);
   }
 
-  const data = await res.json();
+  const data = res.json as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
   return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 }

@@ -75,10 +75,10 @@ Question: ${naturalQuery}`;
   const raw = await callLLM(provider, apiKey, effectiveModel, prompt);
   try {
     const cleaned = raw.replace(/```json\n?/g, "").replace(/```/g, "").trim();
-    const parsed = JSON.parse(cleaned);
+    const parsed = JSON.parse(cleaned) as { variants?: string[]; detectedDomain?: string };
     return {
       variants: Array.isArray(parsed.variants) && parsed.variants.length > 0
-        ? parsed.variants.filter((v: unknown) => typeof v === "string" && v.trim().length > 0)
+        ? parsed.variants.filter((v: string) => v.trim().length > 0)
         : [naturalQuery],
       detectedDomain: parsed.detectedDomain || "general",
     };
@@ -115,7 +115,7 @@ Return ONLY a JSON array (no markdown, no backticks):
   const raw = await callLLM(provider, apiKey, effectiveModel, prompt);
   try {
     const cleaned = raw.replace(/```json\n?/g, "").replace(/```/g, "").trim();
-    const scores: SemanticScore[] = JSON.parse(cleaned);
+    const scores: SemanticScore[] = JSON.parse(cleaned) as SemanticScore[];
 
     const scoreMap = new Map<number, SemanticScore>();
     for (const s of scores) {
@@ -164,14 +164,14 @@ ${summaries}
 Return ONLY JSON:
 {"gaps": "what key aspects are missing", "refinedQuery": "new optimized keyword search string"}`;
 
-  const raw = await callLLM(provider, apiKey, effectiveModel, prompt);
+  const raw2 = await callLLM(provider, apiKey, effectiveModel, prompt);
   try {
-    const cleaned = raw.replace(/```json\n?/g, "").replace(/```/g, "").trim();
-    const parsed = JSON.parse(cleaned);
+    const cleaned2 = raw2.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+    const parsed2 = JSON.parse(cleaned2) as { gaps?: string; refinedQuery?: string };
     return {
       sufficient: false,
-      gaps: parsed.gaps || "Coverage insufficient",
-      refinedQuery: parsed.refinedQuery || question,
+      gaps: parsed2.gaps || "Coverage insufficient",
+      refinedQuery: parsed2.refinedQuery || question,
     };
   } catch {
     return { sufficient: false, gaps: "Coverage insufficient", refinedQuery: question };

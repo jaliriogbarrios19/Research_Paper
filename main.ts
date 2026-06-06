@@ -7,9 +7,9 @@ import {
   setSpobBaseUrl,
 } from "./src/settings";
 import { ResearchModal } from "./src/research-modal";
-import { LLMProvider, AcademicWork } from "./src/types";
+import { LLMProvider } from "./src/types";
 import { t, type LocaleStrings } from "./src/locales";
-import { searchAcademic, generateBrief, verifyDOIs } from "./src/research-engine";
+
 
 export default class ResearchAndPaperPlugin extends Plugin {
   settings!: PluginSettings;
@@ -52,7 +52,7 @@ export default class ResearchAndPaperPlugin extends Plugin {
   onunload() {}
 
   async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData()) as PluginSettings;
     setSpobBaseUrl(this.settings.spobBaseUrl || "http://localhost:8080");
   }
 

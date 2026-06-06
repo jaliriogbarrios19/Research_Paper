@@ -102,7 +102,7 @@ export class SettingsTab extends PluginSettingTab {
     containerEl.empty();
     const L = (k: keyof LocaleStrings) => t(k, this.plugin.getLocale());
 
-    containerEl.createEl("h2", { text: "Research and Paper" });
+    new Setting(containerEl).setName("Research and Paper").setHeading();
 
     this.addSpobBanner(containerEl);
 
@@ -186,13 +186,13 @@ export class SettingsTab extends PluginSettingTab {
               } catch { /* offline */ }
             }
             btn.setButtonText(ok ? "✓ Conectado" : "✗ Falló");
-            setTimeout(() => btn.setButtonText("Probar"), 3000);
+            window.setTimeout(() => btn.setButtonText("Probar"), 3000);
             btn.setDisabled(false);
           })
         );
     }
 
-    containerEl.createEl("h3", { text: "Bases de datos académicas" });
+    new Setting(containerEl).setName("Bases de datos académicas").setHeading();
 
     new Setting(containerEl)
       .setName("PubMed API Key")
@@ -220,7 +220,7 @@ export class SettingsTab extends PluginSettingTab {
           });
       });
 
-    containerEl.createEl("h3", { text: L("apiKeysLabel") });
+    new Setting(containerEl).setName(L("apiKeysLabel")).setHeading();
 
     for (const { value, label } of LLM_PROVIDERS) {
       const field = getApiKeyField(value);
