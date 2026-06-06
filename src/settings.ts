@@ -173,7 +173,8 @@ export class SettingsTab extends PluginSettingTab {
         .setName("Probar conexión")
         .setDesc("Verifica que la API key de spob funciona")
         .addButton((btn) =>
-          btn.setButtonText("Probar").onClick(async () => {
+          btn.setButtonText("Probar").onClick(() => {
+            void (async () => {
             btn.setDisabled(true);
             btn.setButtonText("Probando...");
             const key = this.plugin.settings.spobApiKey;
@@ -188,6 +189,7 @@ export class SettingsTab extends PluginSettingTab {
             btn.setButtonText(ok ? "✓ Conectado" : "✗ Falló");
             window.setTimeout(() => btn.setButtonText("Probar"), 3000);
             btn.setDisabled(false);
+            })();
           })
         );
     }

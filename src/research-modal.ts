@@ -55,13 +55,13 @@ export class ResearchModal extends Modal {
 
   close() {
     if (this.state.generating || this.state.loading || this.state.optimizing) {
-      const confirmed = window.confirm(
-        "¿Desea detener el proceso? Se perderá el progreso."
-      );
-      if (!confirmed) return;
-      this.state.generating = false;
-      this.state.loading = false;
-      this.state.optimizing = false;
+      new ConfirmStopModal(this.app, () => {
+        this.state.generating = false;
+        this.state.loading = false;
+        this.state.optimizing = false;
+        super.close();
+      }).open();
+      return;
     }
     super.close();
   }
@@ -267,6 +267,34 @@ export class ResearchModal extends Modal {
       () => this.close(),
       () => this.render()
     );
+  }
+
+  onClose() {
+    this.contentEl.empty();
+  }
+}
+
+class ConfirmStopModal extends Modal {
+  private onConfirm: () => void;
+
+  constructor(app: App, onConfirm: () => void) {
+    super(app);
+    this.onConfirm = onConfirm;
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.createEl("p", { text: "¿Desea detener el proceso? Se perderá el progreso." });
+    new Setting(contentEl)
+      .addButton((btn) =>
+        btn.setButtonText("Detener").onClick(() => {
+          this.close();
+          this.onConfirm();
+        })
+      )
+      .addButton((btn) =>
+        btn.setButtonText("Continuar").onClick(() => this.close())
+      );
   }
 
   onClose() {
