@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, PluginSettingTab, Setting, requestUrl } from "obsidian";
 import type ResearchAndPaperPlugin from "../main";
 import { LLMProvider, LLM_PROVIDERS, LLM_MODELS } from "./types";
 import { t, type LocaleStrings } from "./locales";
@@ -181,8 +181,8 @@ export class SettingsTab extends PluginSettingTab {
             let ok = false;
             if (key) {
               try {
-                const res = await fetch(`${url}/health`, { headers: { Authorization: `Bearer ${key}` } });
-                ok = res.ok;
+                const res = await requestUrl({ url: `${url}/health`, headers: { Authorization: `Bearer ${key}` } });
+                ok = res.status >= 200 && res.status < 300;
               } catch { /* offline */ }
             }
             btn.setButtonText(ok ? "✓ Conectado" : "✗ Falló");

@@ -1,4 +1,4 @@
-import { Editor, MarkdownView, Notice, Plugin, moment } from "obsidian";
+import { Editor, MarkdownView, Notice, Plugin, moment, requestUrl } from "obsidian";
 import {
   PluginSettings,
   DEFAULT_SETTINGS,
@@ -74,16 +74,16 @@ export default class ResearchAndPaperPlugin extends Plugin {
       return;
     }
     const baseUrl = s.spobBaseUrl || "https://spob-backend.fly.dev";
-    fetch(`${baseUrl}/me`, {
+    requestUrl({
+      url: `${baseUrl}/me`,
       headers: { Authorization: `Bearer ${s.spobApiKey}` },
     })
       .then((res) => {
-        if (!res.ok) return;
-        res.json().then((data: { credits?: number }) => {
-          if (data.credits != null && this.statusBarItemEl) {
-            this.statusBarItemEl.setText(`spob: $${Number(data.credits).toFixed(4)}`);
-          }
-        });
+        if (res.status !== 200) return;
+        const data = res.json as { credits?: number };
+        if (data.credits != null && this.statusBarItemEl) {
+          this.statusBarItemEl.setText(`spob: $${Number(data.credits).toFixed(4)}`);
+        }
       })
       .catch(() => {});
   }
