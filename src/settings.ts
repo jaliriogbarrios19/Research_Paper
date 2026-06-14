@@ -24,6 +24,7 @@ export interface PluginSettings {
   spobBaseUrl: string;
   pubmedApiKey: string;
   crossrefEmail: string;
+  lastSeenVersion: string;
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -44,9 +45,10 @@ export const DEFAULT_SETTINGS: PluginSettings = {
   glmModel: "glm-4-plus",
   spobApiKey: "",
   spobModel: "deepseek-v4-pro",
-  spobBaseUrl: "https://spob-backend.fly.dev",
+  spobBaseUrl: "https://spob.fly.dev",
   pubmedApiKey: "",
   crossrefEmail: "",
+  lastSeenVersion: "",
 };
 
 const API_KEY_FIELDS: Record<LLMProvider, keyof PluginSettings> = {
@@ -79,7 +81,7 @@ export function getModelField(provider: LLMProvider): keyof PluginSettings {
   return MODEL_FIELDS[provider];
 }
 
-let spobBaseUrl = "https://spob-backend.fly.dev";
+let spobBaseUrl = "https://spob.fly.dev";
 
 export function getSpobBaseUrl(): string {
   return spobBaseUrl;
@@ -178,7 +180,7 @@ export class SettingsTab extends PluginSettingTab {
             btn.setDisabled(true);
             btn.setButtonText("Probando...");
             const key = this.plugin.settings.spobApiKey;
-            const url = this.plugin.settings.spobBaseUrl || "https://spob-backend.fly.dev";
+            const url = this.plugin.settings.spobBaseUrl || "https://spob.fly.dev";
             let ok = false;
             if (key) {
               try {
@@ -233,8 +235,8 @@ export class SettingsTab extends PluginSettingTab {
           attr: { style: "margin-top: -8px; margin-bottom: 16px;" },
         });
         spobLink.createEl("a", {
-          text: "Obtén tu API key en spob-backend.fly.dev →",
-          href: "https://spob-backend.fly.dev",
+          text: "Obtén tu API key en spob.fly.dev →",
+          href: "https://spob.fly.dev",
         });
       }
     }
@@ -267,7 +269,7 @@ export class SettingsTab extends PluginSettingTab {
     });
     links.createEl("a", {
       text: "🚀 Servicios SPOB",
-      href: "https://spob-backend.fly.dev",
+      href: "https://spob.fly.dev",
     });
   }
 

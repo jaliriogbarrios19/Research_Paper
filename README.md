@@ -26,7 +26,7 @@ The plugin auto-detects your Obsidian language.
 | GLM (Z.ai) | GLM-4 Plus, GLM-4, GLM-4 Flash, GLM-4 Air |
 | **Smart Plugins Obsidian (spob)** | **DeepSeek V4 Pro, V4 Flash** |
 
-> **spob** es el proveedor por defecto. [Obtené tu API key](https://spob-backend.fly.dev) y empezá a generar briefs con DeepSeek al instante — sin configurar nada más.
+> **spob** es el proveedor por defecto. [Obtené tu API key](https://spob.fly.dev) y empezá a generar briefs con DeepSeek al instante — sin configurar nada más.
 
 ## Tutorial
 

@@ -9,6 +9,7 @@ import {
 import { ResearchModal } from "./src/research-modal";
 import { LLMProvider } from "./src/types";
 import { t, type LocaleStrings } from "./src/locales";
+import { WhatsNewModal } from "./src/whats-new-modal";
 
 
 export default class ResearchAndPaperPlugin extends Plugin {
@@ -47,6 +48,7 @@ export default class ResearchAndPaperPlugin extends Plugin {
     });
 
     this.updateCredits();
+    this.checkWhatsNew();
   }
 
   onunload() {}
@@ -62,6 +64,19 @@ export default class ResearchAndPaperPlugin extends Plugin {
     this.updateCredits();
   }
 
+  private checkWhatsNew(): void {
+    const currentVersion = this.manifest.version;
+    const lastSeen = this.settings.lastSeenVersion;
+
+    if (lastSeen !== currentVersion) {
+      window.setTimeout(() => {
+        new WhatsNewModal(this.app, lastSeen).open();
+        this.settings.lastSeenVersion = currentVersion;
+        void this.saveSettings();
+      }, 1000);
+    }
+  }
+
   getApiKey(provider: LLMProvider): string {
     const field = getApiKeyField(provider);
     return (this.settings as unknown as Record<string, string>)[field] ?? "";
@@ -73,7 +88,7 @@ export default class ResearchAndPaperPlugin extends Plugin {
       if (this.statusBarItemEl) this.statusBarItemEl.setText("");
       return;
     }
-    const baseUrl = s.spobBaseUrl || "https://spob-backend.fly.dev";
+    const baseUrl = s.spobBaseUrl || "https://spob.fly.dev";
     requestUrl({
       url: `${baseUrl}/me`,
       headers: { Authorization: `Bearer ${s.spobApiKey}` },
